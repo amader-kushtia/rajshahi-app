@@ -1,0 +1,38 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profiles",
+      "description": "Registered app users and citizens",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "gender": { "type": "string" },
+        "ward": { "type": "string" },
+        "address": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["uid", "email"]
+    },
+    "posts": {
+      "title": "Community Posts & Classifieds",
+      "description": "House rent, services, marketplace listings",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "contactPhone": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "title", "category"]
+    }
+  }
+}

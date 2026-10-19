@@ -1,0 +1,6 @@
+{
+  "name": "(আমার কুষ্টিয়া)",
+  "description": "কুষ্টিয়া জেলার আধুনিক স্মার্ট নাগরিক সেবা, দর্শনীয় স্থান, বাসা ভাড়া, জরুরি কন্টাক্ট ও কমিউনিটি পোর্টাল",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

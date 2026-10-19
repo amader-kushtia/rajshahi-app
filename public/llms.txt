@@ -1,0 +1,16 @@
+# Amar Kushtia (আমার কুষ্টিয়া)
+> Smart digital civic service network, marketplace, tourism, housing, emergency directory, and community portal for Kushtia district, Bangladesh.
+
+## Core Features
+- Tourism & Heritage: Detailed guide to Lalon Shah Shrine, Shilaidaha Rabindra Kuthibari, Hardinge Bridge, Kangal Harinath Museum, and Gorai River.
+- Emergency Directory: Immediate access to Kushtia Sadar Police, Fire Service, General Hospital, Blood Donors, and Ambulance services.
+- House Rent & Marketplace: Verified property rentals, buy/sell listings, and local classifieds in Kushtia.
+- Civic Services & Directory: Technicians, Electricians, Lawyers, Doctors, and Skilled Service Providers across all 6 upazilas.
+- Secret Crime Reporter: 100% encrypted, anonymous crime reporting directly connecting with official authorities.
+- Bus & Train Schedules: Real-time schedule information for Poradah Junction, Kushtia Court Station, and Mojompur Bus Terminals.
+- Community News & Events: Verified local notices, blood donation requests, and event updates.
+
+## Technical Specifications
+- Platform: Progressive Web Application (PWA) with offline capabilities.
+- Accessibility: 100% WCAG compliant with Bengali typography and native mobile optimization.
+- Security: End-to-end client-side encryption for anonymous reports and Firebase Authentication.

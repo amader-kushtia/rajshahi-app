@@ -1,0 +1,92 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Helper function to check if current requesting user is an Admin
+    function isAdmin() {
+      return isSignedIn() && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+        (request.auth.token.email != null && 
+         request.auth.token.email.lower() in ['habiburrahman962540@gmail.com', 'mh7539019@gmail.com'])
+      );
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      // Anyone can read user profile data
+      allow read: if true;
+      
+      // Creating user profile: Users cannot self-assign role='admin'
+      allow create: if isSignedIn() && (
+        !('role' in request.resource.data) || 
+        request.resource.data.role != 'admin' || 
+        isAdmin()
+      );
+      
+      // Updating profile: Users cannot change their role to admin
+      allow update: if (isOwner(userId) && (
+        !('role' in request.resource.data) || 
+        ('role' in resource.data && request.resource.data.role == resource.data.role) || 
+        isAdmin()
+      )) || isAdmin();
+
+      // Deleting user profiles: Only admins
+      allow delete: if isAdmin();
+    }
+
+    // Posts Collection
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update: if isAdmin() || 
+        ('authorId' in resource.data && resource.data.authorId == request.auth.uid) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'views', 'shares', 'reviewsCount', 'rating', 'lastViewUpdate', 'viewsLast24h']));
+      allow delete: if isAdmin() || (
+        isSignedIn() && 
+        ('authorId' in resource.data && resource.data.authorId == request.auth.uid)
+      );
+    }
+
+    // App Settings & Config
+    match /config/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Emergency Alerts & Notices
+    match /alerts/{alertId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Likes Collection
+    match /likes/{likeId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+    }
+
+    // Reviews Collection
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+    }
+
+    // Default catch-all
+    match /{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

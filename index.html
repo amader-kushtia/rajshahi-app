@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="bn">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>আমার কুষ্টিয়া — ডিজিটাল নাগরিক সেবা পোর্টাল</title>
+    <meta name="description" content="কুষ্টিয়া জেলার আধুনিক স্মার্ট নাগরিক সেবা, দর্শনীয় স্থান, বাসা ভাড়া, যাতায়াত ও কমিউনিটি নেটওয়ার্ক" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#059669" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="আমার কুষ্টিয়া" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" href="/pwa-192x192.png" />
+
+    <meta property="og:title" content="আমার কুষ্টিয়া — ডিজিটাল নাগরিক সেবা পোর্টাল" />
+    <meta property="og:description" content="কুষ্টিয়া জেলার আধুনিক স্মার্ট নাগরিক সেবা, দর্শনীয় স্থান, বাসা ভাড়া, যাতায়াত ও কমিউনিটি নেটওয়ার্ক" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <!-- Resource Hints & Preconnects for Ultra Fast Mobile Paint -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://images.unsplash.com">
+    <link rel="dns-prefetch" href="https://images.unsplash.com">
+    <link rel="dns-prefetch" href="https://wa.me">
+    <!-- Non-blocking font load to eliminate FOIT & FCP blocking -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" media="print" onload="this.media='all'">
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
+    </noscript>
+
+    <style>
+      html, body {
+        touch-action: manipulation;
+        -webkit-text-size-adjust: 100%;
+      }
+    </style>
+    <script>
+      // Prevent multi-touch pinch-to-zoom
+      document.addEventListener('touchstart', function (event) {
+        if (event.touches.length > 1) {
+          event.preventDefault();
+        }
+      }, { passive: false });
+    </script>
+  </head>
+  <body class="bg-[#F4F6F4] text-slate-800 font-['Hind_Siliguri',system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif] antialiased selection:bg-emerald-600 selection:text-white transition-colors">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

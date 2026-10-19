@@ -1,0 +1,21 @@
+{
+  "name": "আমার কুষ্টিয়া - Amar Kushtia",
+  "short_name": "আমার কুষ্টিয়া",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F4F6F4",
+  "theme_color": "#059669",
+  "description": "বাউল সম্রাট লালন ও বিশ্বকবি রবীন্দ্রনাথ ঠাকুরের স্মৃতিবিজড়িত কুষ্টিয়া জেলার আধুনিক স্মার্ট নাগরিক সেবা ও কমিউনিটি পোর্টাল",
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

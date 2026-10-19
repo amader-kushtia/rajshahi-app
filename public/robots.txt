@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://magical-figolla-e539df.netlify.app/sitemap.xml

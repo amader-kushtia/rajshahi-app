@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+html, body {
+  touch-action: pan-y;
+  overscroll-behavior-x: none;
+  overflow-x: hidden !important;
+  width: 100% !important;
+  max-width: 100vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  position: relative;
+}
+
+#root {
+  touch-action: pan-y;
+  overscroll-behavior-x: none;
+  overflow-x: hidden !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  position: relative;
+}
+
+*, ::before, ::after {
+  box-sizing: border-box;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: inline-flex;
+  white-space: nowrap;
+  width: max-content;
+  animation: marquee 16s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+.font-serif-bengali {
+  font-family: 'Noto Serif Bengali', serif;
+}

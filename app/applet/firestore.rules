@@ -1,0 +1,148 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    // Helper function to check if current requesting user is an Admin
+    function isAdmin() {
+      return isSignedIn() && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+        (request.auth.token.email != null && 
+          request.auth.token.email.lower() in ['habiburrahman962540@gmail.com', 'mh7539019@gmail.com'])
+      );
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isSignedIn() && (
+        !('role' in request.resource.data) || 
+         request.resource.data.role != 'admin' || 
+         isAdmin()
+      );
+      allow update: if (isOwner(userId) && (
+        !('role' in request.resource.data) || 
+         ('role' in resource.data && request.resource.data.role == resource.data.role) || 
+         isAdmin()
+      )) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Posts Collection
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update: if isAdmin() || 
+        ('authorId' in resource.data && resource.data.authorId == request.auth.uid) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'views', 'shares', 'reviewsCount', 'rating', 'lastViewUpdate', 'viewsLast24h']));
+      allow delete: if isAdmin() || (
+        isSignedIn() && 
+        ('authorId' in resource.data && resource.data.authorId == request.auth.uid)
+      );
+    }
+
+    // App Settings & Config
+    match /config/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /admin_config/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /admin_accounts/{accountId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Emergency Alerts & Notices
+    match /alerts/{alertId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /emergency_broadcasts/{broadcastId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Likes Collection
+    match /likes/{likeId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+    }
+
+    // Reviews & Service Reviews
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+    }
+    match /service_reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+    }
+
+    // Explicit Rules for Requested Collections
+    match /rate_limits/{rateId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /rejected_posts/{postId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /system_summaries/{summaryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /fcm_tokens/{tokenId} {
+      allow read, write: if true;
+    }
+
+    match /weather_cache/{cacheId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Other App Collections
+    match /donations/{donationId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+    match /fund_expenses/{expenseId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+    match /volunteers/{volunteerId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+    match /wallet_transactions/{txId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    // Default catch-all rule (secure deny all)
+    match /{document=**} {
+      allow read: if false;
+      allow write: if false;
+    }
+  }
+}
