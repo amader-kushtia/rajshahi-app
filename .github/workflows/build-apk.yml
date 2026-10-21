@@ -13,10 +13,11 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Clean install
+      - name: Install dependencies
         run: |
           rm -f package-lock.json
           npm install
+          npm install @capacitor/core @capacitor/cli @capacitor/android
 
       - name: Build Vite app
         run: npm run build
@@ -26,9 +27,11 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - run: npm install -g @capacitor/cli
-      - run: npx cap add android
-      - run: npx cap sync android
+      - name: Init and add Capacitor Android
+        run: |
+          npx cap init "আমার কুষ্টিয়া" "com.rajshahi.app" --web-dir=dist
+          npx cap add android
+          npx cap sync android
 
       - name: Generate icons with Python
         run: |
