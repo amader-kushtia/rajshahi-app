@@ -9,7 +9,8 @@ import {
   CheckCircle2, 
   AlertCircle,
   Loader2,
-  Sparkles
+  Sparkles,
+  AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { CategoryType, PostItem } from '../types';
@@ -212,10 +213,8 @@ export const PostCreateModal: React.FC<PostCreateModalProps> = ({
       
       if (isAdmin) {
         setSuccessMessage('পোস্টটি সফলভাবে তৈরি ও সরাসরি প্রকাশ করা হয়েছে!');
-      } else if (category === 'crime-reporter') {
-        setSuccessMessage('আপনার গোপন তথ্যটি প্রমাণ সহ সফলভাবে জমা হয়েছে! এটি বর্তমানে এডমিন প্যানেলে পেন্ডিং (Pending) আছে। এডমিন অনুমোদন করলেই এটি সবার কাছে প্রকাশ পাবে। আপনার প্রোফাইলে স্ট্যাটাস দেখতে পারবেন।');
       } else {
-        setSuccessMessage('আপনার পোস্টটি সফলভাবে জমা হয়েছে এবং বর্তমানে পেন্ডিং রয়েছে। এডমিন প্যানেল থেকে অনুমোদন দিলে এটি সবার কাছে পাবলিক হবে। আপনার প্রোফাইলে স্ট্যাটাস দেখতে পারবেন।');
+        setSuccessMessage('প্রিয় ব্যবহারকারী, আপনার মূল্যবান পোস্টটি আমাদের অ্যাডমিন টিম যাচাই-বাছাই করছে। পোস্টটি প্রকাশের উপযুক্ত বিবেচিত হলে অবশ্যই পাবলিশ করা হবে। অনুগ্রহ করে কিছুক্ষণ ধৈর্য ধরে অপেক্ষা করুন। আপনার সহযোগিতাই আমাদের অনুপ্রেরণা।\n\n— আমার কুষ্টিয়া অ্যাডমিন টিম');
       }
 
       setTimeout(() => {
@@ -269,6 +268,19 @@ export const PostCreateModal: React.FC<PostCreateModalProps> = ({
             <span>{errorMessage}</span>
           </div>
         )}
+
+        {/* Admin Review Notice Card */}
+        <div className="mb-4 bg-pink-50 border border-pink-200 rounded-2xl p-3 text-xs text-pink-950 space-y-1 shadow-xs">
+          <div className="font-bold flex items-center gap-1.5 text-pink-900 text-xs">
+            <AlertTriangle className="w-3.5 h-3.5 text-pink-700" />
+            <span>অ্যাডমিন যাচাই-বাছাই নোটিশ</span>
+          </div>
+          <p className="text-slate-700 leading-relaxed whitespace-pre-line text-[11px]">
+            প্রিয় ব্যবহারকারী, আপনার মূল্যবান পোস্টটি আমাদের অ্যাডমিন টিম যাচাই-বাছাই করছে। পোস্টটি প্রকাশের উপযুক্ত বিবেচিত হলে অবশ্যই পাবলিশ করা হবে। অনুগ্রহ করে কিছুক্ষণ ধৈর্য ধরে অপেক্ষা করুন। আপনার সহযোগিতাই আমাদের অনুপ্রেরণা।
+            
+            — আমার কুষ্টিয়া অ্যাডমিন টিম
+          </p>
+        </div>
 
         {/* Category Selector */}
         <div className="mb-4">

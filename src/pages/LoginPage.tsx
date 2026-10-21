@@ -274,7 +274,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onNavigate, onOpen
             <img src="/assets/logo.svg" alt="Logo" className="w-full h-full object-contain filter drop-shadow" />
           </div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-            কুষ্টিয়া জেলা
+            আমার কুষ্টিয়া
           </h2>
           <p className="text-sm text-slate-500 font-medium mt-1">
             স্বাগতম! দয়া করে আপনার তথ্য দিন।

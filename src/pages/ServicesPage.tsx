@@ -129,7 +129,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
                   সকল নাগরিক সেবা
                 </h1>
                 <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                  ৫০টি সেবা
+                  ১০০টি সেবা
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -346,7 +346,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold active:scale-95 transition-transform"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>সকল ৫০টি সেবা দেখুন</span>
+              <span>সকল ১০০টি সেবা দেখুন</span>
             </button>
           </div>
         )}

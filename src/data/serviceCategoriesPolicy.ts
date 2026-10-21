@@ -324,16 +324,16 @@ export const SERVICE_POSTING_POLICIES: Record<string, ServicePostingPolicy> = {
     badge: 'শোরুম / প্রতিষ্ঠান প্রচার',
     subcategories: ['পোশাক ও ক্লথিং শোরুম', 'জুয়েলারি ও স্বর্ণের দোকান', 'ইলেকট্রনিক্স ও হোম অ্যাপ্লায়েন্স', 'পাইকারি আড়ত ও বাণিজ্যিক প্রতিষ্ঠান', 'নতুন শোরুম উদ্বোধন অফার']
   },
-  'hotel': {
-    id: 'hotel',
-    label: 'আবাসিক হোটেল ও গেস্ট হাউস',
-    englishLabel: 'Hotels & Accommodation',
-    icon: Hotel,
+  'cng-auto': {
+    id: 'cng-auto',
+    label: 'সিএনজি ও অটো বাইক',
+    englishLabel: 'CNG & Auto Bike',
+    icon: Car,
     allowPublicPost: true,
     group: 'transport',
-    groupLabel: 'হোটেল ও থাকার জায়গা',
-    badge: 'রুম বুকিং / গেস্ট হাউস',
-    subcategories: ['ভিআইপি এসি রুম বুকিং', 'নন-এসি বাজেট রুম', 'ফ্যামিলি স্যুট ও গেস্ট হাউস', 'কর্পোরেট মিটিং রুম ও হল']
+    groupLabel: 'যাতায়াত ও ভাড়া',
+    badge: 'সিএনজি ও অটো স্ট্যান্ড',
+    subcategories: ['শহর ও উপজেলা রুট', 'রিজার্ভ সিএনজি', 'অটো রিকশা ও ইজিবাইক', 'ভাড়া তালিকা ও স্ট্যান্ড']
   },
   'residential-hotel': {
     id: 'residential-hotel',

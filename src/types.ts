@@ -11,7 +11,7 @@ export type CategoryType =
   | 'courier' | 'computer-print' | 'freelancing' | 'car-repair' | 'school-college' | 'education-result' | 'car-rental' 
   | 'agriculture' | 'fisheries' | 'hotel' | 'grocery' | 'vegetables' | 'beauty-parlor' | 'laundry' | 'furniture' 
   | 'hardware' | 'internet' | 'utility' | 'eye-care' | 'dental-care' | 'fitness' | 'sports'
-  | 'union-parishad' | 'residential-hotel';
+  | 'union-parishad' | 'cng-auto';
 
 
 export interface UserProfile {

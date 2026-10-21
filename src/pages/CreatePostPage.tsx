@@ -412,12 +412,6 @@ export const CreatePostPage: React.FC<CreatePostPageProps> = ({
       return;
     }
 
-    // NEW: Email Verification Check
-    if (!user?.isVerified && !isAdmin) {
-      setErrorMessage('পোস্ট করার জন্য আপনার ইমেইল যাচাই করা আবশ্যক। দয়া করে আপনার ইনবক্স চেক করে ইমেইল ভেরিফাই করুন।');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
 
     // Enforce category-level public vs admin permissions
     if (!canUserPostInCategory(category, isAdmin)) {
@@ -565,10 +559,10 @@ export const CreatePostPage: React.FC<CreatePostPageProps> = ({
         deleteLocalDraft(currentDraftId);
       }
 
-      if (category === 'crime-reporter') {
-        setSuccessMessage('আপনার গোপন তথ্যটি প্রমাণ সহ সফলভাবে জমা হয়েছে! এটি বর্তমানে এডমিন প্যানেলে পেন্ডিং (Pending) আছে। এডমিন অনুমোদন করলেই এটি সবার কাছে প্রকাশ পাবে। আপনার প্রোফাইলে স্ট্যাটাস দেখতে পারবেন।');
+      if (isAdmin) {
+        setSuccessMessage('পোস্টটি সফলভাবে তৈরি ও সরাসরি প্রকাশ করা হয়েছে!');
       } else {
-        setSuccessMessage('আপনার পোস্টটি সফলভাবে জমা হয়েছে এবং বর্তমানে পেন্ডিং রয়েছে। এডমিন প্যানেল থেকে অনুমোদন দিলে এটি সবার কাছে পাবলিক হবে। আপনার প্রোফাইলে স্ট্যাটাস দেখতে পারবেন।');
+        setSuccessMessage('প্রিয় ব্যবহারকারী, আপনার মূল্যবান পোস্টটি আমাদের অ্যাডমিন টিম যাচাই-বাছাই করছে। পোস্টটি প্রকাশের উপযুক্ত বিবেচিত হলে অবশ্যই পাবলিশ করা হবে। অনুগ্রহ করে কিছুক্ষণ ধৈর্য ধরে অপেক্ষা করুন। আপনার সহযোগিতাই আমাদের অনুপ্রেরণা।\n\n— আমার কুষ্টিয়া অ্যাডমিন টিম');
       }
 
       setTimeout(() => {
@@ -665,6 +659,19 @@ export const CreatePostPage: React.FC<CreatePostPageProps> = ({
           </button>
         </div>
       )}
+
+      {/* Admin Review Notice Card */}
+      <div className="bg-pink-50 border border-pink-200 rounded-3xl p-4 text-xs text-pink-950 space-y-1.5 shadow-xs">
+        <div className="font-bold flex items-center gap-1.5 text-pink-900 text-sm">
+          <AlertTriangle className="w-4 h-4 text-pink-700" />
+          <span>অ্যাডমিন যাচাই-বাছাই নোটিশ</span>
+        </div>
+        <p className="text-slate-700 leading-relaxed whitespace-pre-line">
+          প্রিয় ব্যবহারকারী, আপনার মূল্যবান পোস্টটি আমাদের অ্যাডমিন টিম যাচাই-বাছাই করছে। পোস্টটি প্রকাশের উপযুক্ত বিবেচিত হলে অবশ্যই পাবলিশ করা হবে। অনুগ্রহ করে কিছুক্ষণ ধৈর্য ধরে অপেক্ষা করুন। আপনার সহযোগিতাই আমাদের অনুপ্রেরণা।
+          
+          — আমার কুষ্টিয়া অ্যাডমিন টিম
+        </p>
+      </div>
 
       {/* Blood Request Redirection Card for Citizens */}
       {!isAdmin && (initialCategory === 'blood' || (initialCategory as string) === 'blood-request') && (
@@ -795,7 +802,7 @@ export const CreatePostPage: React.FC<CreatePostPageProps> = ({
             </label>
             <p className="text-[11px] text-slate-500 mt-0.5">
               {isAdmin 
-                ? 'এডমিন হিসেবে আপনি সকল ৫০টি সেবায় (সরকারি, জরুরি ও নাগরিক) পোস্ট করতে পারবেন' 
+                ? 'এডমিন হিসেবে আপনি সকল ১০০টি সেবায় (সরকারি, জরুরি ও নাগরিক) পোস্ট করতে পারবেন' 
                 : 'কুষ্টিয়ার নাগরিকদের জন্য উন্মুক্ত যে সেবা দিতে চান তা বেছে নিন'}
             </p>
           </div>
@@ -844,7 +851,7 @@ export const CreatePostPage: React.FC<CreatePostPageProps> = ({
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  সব ৫০টি সেবা ({categoriesConfig.length})
+                  সব ১০০টি সেবা ({categoriesConfig.length})
                 </button>
                 <button
                   type="button"
