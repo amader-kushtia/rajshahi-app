@@ -6,6 +6,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -33,44 +35,27 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: Generate and fix ALL icons
+      - name: Generate icons with Python
         run: |
           pip install Pillow
           python3 << 'PYEOF'
           from PIL import Image
           import os
-
           img = Image.open("assets/icon-only.png").convert("RGBA")
-
-          sizes = {
-            "mipmap-mdpi": 48,
-            "mipmap-hdpi": 72,
-            "mipmap-xhdpi": 96,
-            "mipmap-xxhdpi": 144,
-            "mipmap-xxxhdpi": 192,
-          }
-
+          sizes = {"mipmap-mdpi":48,"mipmap-hdpi":72,"mipmap-xhdpi":96,"mipmap-xxhdpi":144,"mipmap-xxxhdpi":192}
           for folder, size in sizes.items():
             path = f"android/app/src/main/res/{folder}"
             os.makedirs(path, exist_ok=True)
-            r = img.resize((size, size), Image.LANCZOS)
+            r = img.resize((size,size), Image.LANCZOS)
             r.save(f"{path}/ic_launcher.png")
             r.save(f"{path}/ic_launcher_round.png")
-            # foreground bigger for adaptive icon
-            fg_size = int(size * 1.5)
-            fg = img.resize((fg_size, fg_size), Image.LANCZOS)
-            canvas = Image.new("RGBA", (fg_size, fg_size), (0,0,0,0))
-            canvas.paste(fg, (0,0))
-            canvas.save(f"{path}/ic_launcher_foreground.png")
-
-          print("Icons done!")
+            r.save(f"{path}/ic_launcher_foreground.png")
           PYEOF
 
       - name: Remove adaptive icon XML
         run: |
           rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
-          echo "Adaptive XML removed!"
 
       - name: Accept licenses
         run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
@@ -81,8 +66,9 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: rajshahi-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 30
+          tag_name: v1.0
+          files: android/app/build/outputs/apk/debug/app-debug.apk
+          token: ${{ secrets.GITHUB_TOKEN }}
