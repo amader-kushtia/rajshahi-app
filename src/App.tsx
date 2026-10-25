@@ -168,6 +168,7 @@ function MainAppContent() {
   const { themeConfig } = useAdminConfig();
   const disabledFeatures = themeConfig.disabledFeatures || [];
   const [isAdminApp, setIsAdminApp] = useState<boolean>(false);
+  const [adminWarning, setAdminWarning] = useState<string | null>(null);
   const [currentCategory, setCurrentCategory] = useState<CategoryType>('home');
   const [posts, setPosts] = useState<PostItem[]>(() => postService.getMasterPosts());
   const [appConfig, setAppConfig] = useState<AppThemeConfig>(() => themeConfig || getAppThemeConfig());
@@ -288,6 +289,12 @@ function MainAppContent() {
       return;
     }
     if (category === 'admin-panel') {
+      if (!isAdmin) {
+        setIsAdminApp(false);
+        setCurrentCategory('home');
+        setAdminWarning('আপনার এই পেইজে (অ্যাডমিন কন্ট্রোল প্যানেল) প্রবেশ করার অনুমতি নেই! শুধুমাত্র অনুমোদিত অ্যাডমিনরা এটি ব্যবহার করতে পারবেন।');
+        return;
+      }
       setIsAdminApp(true);
       return;
     }
@@ -385,10 +392,28 @@ function MainAppContent() {
 
   // Open Admin App via URL hash only if user is the authorized admin
   useEffect(() => {
-    if (isAdmin && (window.location.search.includes('admin') || window.location.hash.includes('admin'))) {
-      setIsAdminApp(true);
+    if (window.location.search.includes('admin') || window.location.hash.includes('admin')) {
+      if (isAdmin) {
+        setIsAdminApp(true);
+      } else {
+        setIsAdminApp(false);
+        setCurrentCategory('home');
+        setAdminWarning('আপনার এই পেইজে (অ্যাডমিন কন্ট্রোল প্যানেল) প্রবেশ করার অনুমতি নেই! শুধুমাত্র অনুমোদিত অ্যাডমিনরা এটি ব্যবহার করতে পারবেন।');
+        if (window.location.hash.includes('admin') || window.location.search.includes('admin')) {
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+      }
     }
   }, [isAdmin]);
+
+  // Strict enforcement: if non-admin user lands on admin app state, redirect to home immediately
+  useEffect(() => {
+    if ((isAdminApp || currentCategory === 'admin-panel') && !isAdmin) {
+      setIsAdminApp(false);
+      setCurrentCategory('home');
+      setAdminWarning('আপনার এই পেইজে (অ্যাডমিন কন্ট্রোল প্যানেল) প্রবেশ করার অনুমতি নেই! শুধুমাত্র অনুমোদিত অ্যাডমিনরা এটি ব্যবহার করতে পারবেন।');
+    }
+  }, [isAdmin, isAdminApp, currentCategory]);
 
   const handleToggleSavePost = (postId: string) => {
     setSavedPostIds(prev => {
@@ -597,7 +622,7 @@ function MainAppContent() {
 
 
   // STANDALONE ADMIN APP INTERFACE
-  if (isAdminApp || currentCategory === 'admin-panel') {
+  if ((isAdminApp || currentCategory === 'admin-panel') && isAdmin) {
     return (
       <ErrorBoundary>
         <Suspense fallback={
@@ -630,6 +655,33 @@ function MainAppContent() {
 
   return (
     <div className={`min-h-screen ${currentCategory === 'home' ? 'bg-[#F4F7FC]' : 'bg-[#F3F5F3]'} text-slate-800 pb-24 font-['Hind_Siliguri',sans-serif] transition-colors w-full overflow-x-hidden`}>
+        {/* Warning Modal for Non-Admin Access Attempts */}
+        {adminWarning && (
+          <div className="fixed inset-0 z-[3000] bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="w-full max-w-sm bg-white rounded-3xl p-6 text-center shadow-2xl border border-rose-100 flex flex-col items-center animate-in zoom-in-95 duration-200">
+              <div className="w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mb-4 border border-rose-200 shadow-inner">
+                <ShieldAlert className="w-7 h-7 animate-bounce" />
+              </div>
+
+              <h3 className="text-lg font-black text-slate-900 mb-1.5">
+                অ্যাক্সেস সংরক্ষিত (Access Restricted)
+              </h3>
+              
+              <p className="text-xs text-slate-600 font-medium leading-relaxed mb-6 bg-rose-50/80 p-3.5 rounded-2xl border border-rose-100">
+                {adminWarning}
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setAdminWarning(null)}
+                className="w-full py-3 bg-gradient-to-r from-emerald-700 to-emerald-600 hover:from-emerald-800 hover:to-emerald-700 active:scale-98 text-white rounded-2xl font-bold text-sm shadow-md transition-all cursor-pointer"
+              >
+                ঠিক আছে, হোম পেজে ফিরে যান
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Sticky App Header - displayed on interior pages */}
         {currentCategory !== 'home' && (
           <Header

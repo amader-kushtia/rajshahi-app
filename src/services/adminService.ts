@@ -406,43 +406,24 @@ export interface AdminAccount {
   createdAt: number;
 }
 
-const ADMIN_EMAIL_PRIMARY = import.meta.env.VITE_ADMIN_EMAIL || 'mh7539019@gmail.com';
-const ADMIN_EMAIL_SECONDARY = import.meta.env.VITE_ADMIN_EMAIL_2 || 'habiburrahman962540@gmail.com';
-
-export const INITIAL_ADMINS: AdminAccount[] = ([
+export const INITIAL_ADMINS: AdminAccount[] = [
   {
     id: 'admin-super-1',
-    email: 'habiburrahman962540@gmail.com',
-    name: 'হাবিবুর রহমান (প্রধান অ্যাডমিন)',
-    role: 'super_admin' as const,
-    status: 'active' as const,
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 30
-  },
-  {
-    id: 'admin-phone-1',
-    email: '01790563831@kushtiaconnect.local',
-    name: 'অ্যাডমিন ০১৭৯০৫৬৩৮৩১',
-    role: 'super_admin' as const,
-    status: 'active' as const,
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 30
-  },
-  {
-    id: 'admin-phone-2',
-    email: '01789344517@kushtiaconnect.local',
-    name: 'অ্যাডমিন ০১৭৮৯৩৪৪৫১৭',
+    email: 'admin1@kushtia.gov.bd',
+    name: 'প্রধান অ্যাডমিন (অ্যাডমিন ১)',
     role: 'super_admin' as const,
     status: 'active' as const,
     createdAt: Date.now() - 1000 * 60 * 60 * 24 * 30
   },
   {
     id: 'admin-super-2',
-    email: 'mh7539019@gmail.com',
-    name: 'আমার কুষ্টিয়া — সহকারী অ্যাডমিন',
+    email: 'admin2@kushtia.gov.bd',
+    name: 'সহকারী অ্যাডমিন (অ্যাডমিন ২)',
     role: 'super_admin' as const,
     status: 'active' as const,
     createdAt: Date.now() - 1000 * 60 * 60 * 24 * 30
   }
-] as AdminAccount[]).filter((admin, index, self) => index === self.findIndex(a => a.email.toLowerCase() === admin.email.toLowerCase()));
+];
 
 export function deduplicateAdminAccounts(accounts: AdminAccount[]): AdminAccount[] {
   if (!Array.isArray(accounts)) return [];

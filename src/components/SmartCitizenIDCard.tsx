@@ -23,6 +23,54 @@ interface SmartCitizenIDCardProps {
   user: UserProfile;
 }
 
+// Synchronous & robust cross-platform copy function for mobile, iframe, PWA & webviews
+export const copyTextToClipboard = (text: string): boolean => {
+  // Method 1: Try document.execCommand first (synchronous & highest compatibility in webviews)
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.fontSize = '12pt';
+    textArea.style.border = '0';
+    textArea.style.padding = '0';
+    textArea.style.margin = '0';
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    textArea.style.top = '-9999px';
+    
+    document.body.appendChild(textArea);
+
+    if (navigator.userAgent.match(/ipad|iphone/i)) {
+      const range = document.createRange();
+      range.selectNodeContents(textArea);
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+      textArea.setSelectionRange(0, 999999);
+    } else {
+      textArea.focus();
+      textArea.select();
+    }
+
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    if (successful) return true;
+  } catch (err) {
+    console.warn('ExecCommand fallback error:', err);
+  }
+
+  // Method 2: Try modern Navigator Clipboard API asynchronously
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).catch((e) => {
+      console.warn('Async clipboard writeText warning:', e);
+    });
+    return true;
+  }
+
+  return false;
+};
+
 export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) => {
   const { themeConfig } = useAdminConfig();
   const cardRef = useRef<HTMLDivElement>(null);
@@ -49,69 +97,38 @@ export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) 
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Synchronous Clipboard Copy with multi-layer fallback for iframe environments
-  const copyToClipboard = (text: string, msg = 'লিঙ্ক ও তথ্য সফলভাবে কপি হয়েছে!') => {
-    let success = false;
+  const fbShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+  const waShareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(postCaption)}`;
+  const tikTokShareUrl = `https://www.tiktok.com/upload`;
 
-    try {
-      const textarea = document.createElement('textarea');
-      textarea.value = text;
-      textarea.style.position = 'fixed';
-      textarea.style.left = '-9999px';
-      textarea.style.top = '-9999px';
-      textarea.setAttribute('readonly', '');
-      document.body.appendChild(textarea);
-      textarea.focus();
-      textarea.select();
-      textarea.setSelectionRange(0, 99999);
-      success = document.execCommand('copy');
-      document.body.removeChild(textarea);
-    } catch (err) {
-      console.warn('execCommand copy warning:', err);
-    }
-
-    if (!success && navigator.clipboard) {
-      navigator.clipboard.writeText(text).then(() => {
-        setShowCopied(true);
-        triggerToast(msg);
-        setTimeout(() => setShowCopied(false), 2500);
-      }).catch(e => {
-        console.warn('Async writeText fallback warning:', e);
-        triggerToast('কপি করতে সমস্যা হয়েছে। লিঙ্ক সিলেক্ট করে ম্যানুয়ালি কপি করুন।');
-      });
-      return;
-    }
-
-    if (success) {
-      setShowCopied(true);
-      triggerToast(msg);
-      setTimeout(() => setShowCopied(false), 2500);
-    } else {
-      triggerToast('লিঙ্ক সিলেক্ট করে ম্যানুয়ালি কপি করুন।');
-    }
+  const handleCopyLinkOnly = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    copyTextToClipboard(postCaption);
+    setShowCopied(true);
+    triggerToast('১-ক্লিকে লিঙ্ক ও পোস্টের ক্যাপশন কপি হয়েছে!');
+    setTimeout(() => setShowCopied(false), 2500);
   };
 
-  // 1-Click Facebook Share & Post
-  const handleFacebookShare = (e?: React.MouseEvent) => {
-    copyToClipboard(postCaption, 'ফেসবুক পোস্টের বিবরণ ও লিঙ্ক কপি হয়েছে!');
-    const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
-    window.open(fbUrl, '_blank', 'noopener,noreferrer');
+  const handleFacebookClick = () => {
+    copyTextToClipboard(postCaption);
+    setShowCopied(true);
+    triggerToast('পোস্টের ক্যাপশন ও লিঙ্ক কপি হয়েছে! ফেসবুকে পেস্ট করুন।');
+    setTimeout(() => setShowCopied(false), 2500);
   };
 
-  // 1-Click TikTok Share & Post
-  const handleTikTokShare = (e?: React.MouseEvent) => {
-    copyToClipboard(postCaption, 'টিকটক ক্যাপশন ও লিঙ্ক কপি হয়েছে! টিকটকে পেস্ট করে শেয়ার করুন।');
-    window.open('https://www.tiktok.com/upload', '_blank', 'noopener,noreferrer');
+  const handleTikTokClick = () => {
+    copyTextToClipboard(postCaption);
+    setShowCopied(true);
+    triggerToast('টিকটক ক্যাপশন ও লিঙ্ক কপি হয়েছে! টিকটকে পেস্ট করে পোস্ট করুন।');
+    setTimeout(() => setShowCopied(false), 2500);
   };
 
-  // 1-Click WhatsApp Share
-  const handleWhatsAppShare = (e?: React.MouseEvent) => {
-    copyToClipboard(postCaption, 'হোয়াটসঅ্যাপ বার্তা কপি হয়েছে!');
-    const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(postCaption)}`;
-    window.open(waUrl, '_blank', 'noopener,noreferrer');
+  const handleWhatsAppClick = () => {
+    copyTextToClipboard(postCaption);
+    triggerToast('হোয়াটসঅ্যাপ বার্তা পাঠানো হচ্ছে...');
   };
 
-  // Main Share Button
+  // Main Native Share Button
   const handleMainShareClick = async () => {
     setError(null);
     setIsSocialModalOpen(true);
@@ -124,15 +141,15 @@ export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) 
           url: shareUrl,
         });
       } catch (err: any) {
-        console.warn('Native share dismissed or not supported in iframe context:', err);
+        console.warn('Native share dismissed or restricted in iframe:', err);
       }
     }
   };
 
-  // Helper to load user photo safely without CORS throwing exceptions
+  // Safe Image Loader
   const loadAvatarImage = (url: string): Promise<HTMLImageElement | null> => {
     return new Promise((resolve) => {
-      if (!url || url === 'initials') {
+      if (!url || url === 'initials' || url.startsWith('data:image/svg+xml')) {
         resolve(null);
         return;
       }
@@ -144,8 +161,8 @@ export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) 
     });
   };
 
-  // Resilient HD PNG Card Download Generator
-  const generateCanvasFallback = async (): Promise<string> => {
+  // Fail-Safe HD PNG Canvas Card Generator
+  const renderCanvasCard = async (includeAvatar: boolean = true): Promise<string> => {
     const canvas = document.createElement('canvas');
     canvas.width = 1000;
     canvas.height = 630;
@@ -158,12 +175,12 @@ export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) 
     const formattedIssuedDate = issuedDate.toLocaleDateString('bn-BD');
     const formattedExpiryDate = expiryDate.toLocaleDateString('bn-BD');
 
-    // Canvas Card Outer Background
+    // Outer Background
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, 1000, 630);
 
     // Rounded Border Frame
-    ctx.strokeStyle = '#e2e8f0';
+    ctx.strokeStyle = '#cbd5e1';
     ctx.lineWidth = 4;
     ctx.strokeRect(2, 2, 996, 626);
 
@@ -190,9 +207,25 @@ export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) 
     ctx.fillText('VERIFIED ✓', 820, 64);
 
     // Photo / Avatar Container
-    const avatarImg = user.photoURL ? await loadAvatarImage(user.photoURL) : null;
+    let avatarImg: HTMLImageElement | null = null;
+    if (includeAvatar && user.photoURL) {
+      try {
+        avatarImg = await loadAvatarImage(user.photoURL);
+      } catch {
+        avatarImg = null;
+      }
+    }
+
     if (avatarImg) {
-      ctx.drawImage(avatarImg, 40, 175, 160, 160);
+      try {
+        ctx.drawImage(avatarImg, 40, 175, 160, 160);
+      } catch {
+        ctx.fillStyle = '#047857';
+        ctx.fillRect(40, 175, 160, 160);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 70px sans-serif';
+        ctx.fillText((user.displayName || 'ন').charAt(0), 95, 280);
+      }
     } else {
       ctx.fillStyle = '#047857';
       ctx.fillRect(40, 175, 160, 160);
@@ -264,7 +297,16 @@ export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) 
     ctx.font = 'bold 12px sans-serif';
     ctx.fillText('Digital Signature', 720, 545);
 
-    return canvas.toDataURL('image/png');
+    // Try exporting dataURL (Catch Tainted Canvas errors gracefully)
+    try {
+      return canvas.toDataURL('image/png');
+    } catch (taintedErr) {
+      console.warn('Canvas tainted by cross-origin photo, re-rendering with fallback vector photo:', taintedErr);
+      if (includeAvatar) {
+        return renderCanvasCard(false);
+      }
+      throw taintedErr;
+    }
   };
 
   const handleDownload = async () => {
@@ -272,21 +314,22 @@ export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) 
     setIsDownloading(true);
 
     try {
-      const dataUrl = await generateCanvasFallback();
+      const dataUrl = await renderCanvasCard(true);
       setPreviewImageData(dataUrl);
 
-      // Trigger standard HTML download
-      try {
-        const downloadLink = document.createElement('a');
-        const filename = `Amar-Kushtia-Citizen-ID-${(user.displayName || 'Citizen').replace(/\s+/g, '-')}.png`;
-        downloadLink.href = dataUrl;
-        downloadLink.download = filename;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-      } catch (dlErr) {
-        console.warn('Automatic download link trigger restricted, preview modal active:', dlErr);
-      }
+      // Trigger automatic file download link
+      const filename = `Amar-Kushtia-Citizen-ID-${(user.displayName || 'Citizen').replace(/\s+/g, '-')}.png`;
+      const downloadLink = document.createElement('a');
+      downloadLink.href = dataUrl;
+      downloadLink.download = filename;
+      downloadLink.target = '_blank';
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      setTimeout(() => {
+        if (document.body.contains(downloadLink)) {
+          document.body.removeChild(downloadLink);
+        }
+      }, 300);
 
       triggerToast('স্মার্ট সিটিজেন আইডি কার্ড সেভ করার জন্য প্রস্তুত!');
     } catch (err: any) {
@@ -294,25 +337,6 @@ export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) 
       setError('কার্ড ছবি তৈরি করতে সমস্যা হয়েছে।');
     } finally {
       setIsDownloading(false);
-    }
-  };
-
-  const openBlobInNewTab = (dataUrl: string) => {
-    try {
-      const arr = dataUrl.split(',');
-      const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
-      const bstr = atob(arr[1]);
-      let n = bstr.length;
-      const u8arr = new Uint8Array(n);
-      while (n--) {
-        u8arr[n] = bstr.charCodeAt(n);
-      }
-      const blob = new Blob([u8arr], { type: mime });
-      const blobUrl = URL.createObjectURL(blob);
-      window.open(blobUrl, '_blank');
-    } catch (e) {
-      console.warn('Blob opening error:', e);
-      window.open(dataUrl, '_blank');
     }
   };
 
@@ -327,6 +351,8 @@ export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) 
 
   const formattedIssuedDate = issuedDate.toLocaleDateString('bn-BD');
   const formattedExpiryDate = expiryDate.toLocaleDateString('bn-BD');
+
+  const fileName = `Amar-Kushtia-Citizen-ID-${(user.displayName || 'Citizen').replace(/\s+/g, '-')}.png`;
 
   return (
     <div className="relative group max-w-[460px] sm:max-w-[540px] w-full mx-auto">
@@ -456,7 +482,7 @@ export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) 
               <div className="flex items-center gap-1">
                 <MapPin className="w-3 h-3 text-slate-400" />
                 <span className="text-[8.5px] sm:text-[9.5px] font-bold text-slate-600 dark:text-slate-400">
-                  {user.upazila ? `${user.upazila}, ` : ''}{user.ward || 'কুষ্টিয়া সদর, কুষ্টিিয়া'}
+                  {user.upazila ? `${user.upazila}, ` : ''}${user.ward || 'কুষ্টিয়া সদর, কুষ্টিিয়া'}
                 </span>
               </div>
               <div className="flex items-center gap-3">
@@ -537,10 +563,12 @@ export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) 
         </div>
 
         <div className="grid grid-cols-4 gap-2">
-          {/* Facebook */}
-          <button
-            type="button"
-            onClick={handleFacebookShare}
+          {/* Facebook Native Link */}
+          <a
+            href={fbShareUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handleFacebookClick}
             className="flex flex-col items-center justify-center py-2 px-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 transition-all active:scale-95 cursor-pointer group"
             title="ফেসবুকে এক ক্লিকে পোস্ট করুন"
           >
@@ -550,12 +578,14 @@ export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) 
               </svg>
             </div>
             <span className="text-[10px] font-black">ফেসবুক</span>
-          </button>
+          </a>
 
-          {/* TikTok */}
-          <button
-            type="button"
-            onClick={handleTikTokShare}
+          {/* TikTok Native Link */}
+          <a
+            href={tikTokShareUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handleTikTokClick}
             className="flex flex-col items-center justify-center py-2 px-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 transition-all active:scale-95 cursor-pointer group"
             title="টিকটকে এক ক্লিকে শেয়ার ও লিঙ্ক পোস্ট করুন"
           >
@@ -565,32 +595,34 @@ export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) 
               </svg>
             </div>
             <span className="text-[10px] font-black">টিকটক</span>
-          </button>
+          </a>
 
-          {/* WhatsApp */}
-          <button
-            type="button"
-            onClick={handleWhatsAppShare}
+          {/* WhatsApp Native Link */}
+          <a
+            href={waShareUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handleWhatsAppClick}
             className="flex flex-col items-center justify-center py-2 px-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 transition-all active:scale-95 cursor-pointer group"
             title="হোয়াটসঅ্যাপে সরাসরি পাঠান"
           >
             <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
               <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338-11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
               </svg>
             </div>
             <span className="text-[10px] font-black">হোয়াটসঅ্যাপ</span>
-          </button>
+          </a>
 
           {/* Copy Link & Details */}
           <button
             type="button"
-            onClick={() => copyToClipboard(postCaption)}
+            onClick={handleCopyLinkOnly}
             className="flex flex-col items-center justify-center py-2 px-1.5 rounded-xl bg-pink-50 dark:bg-pink-950/40 hover:bg-pink-100 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800/60 transition-all active:scale-95 cursor-pointer group"
             title="লিঙ্ক ও পুরো বার্তা কপি করুন"
           >
             <div className="w-7 h-7 rounded-full bg-pink-600 text-white flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
-              {showCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              {showCopied ? <Check className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4 text-white" />}
             </div>
             <span className="text-[10px] font-black">{showCopied ? 'কপি হয়েছে' : 'কপি লিঙ্ক'}</span>
           </button>
@@ -621,7 +653,7 @@ export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) 
               <button
                 type="button"
                 onClick={() => setIsSocialModalOpen(false)}
-                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -635,19 +667,21 @@ export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) 
               </p>
               <button
                 type="button"
-                onClick={() => copyToClipboard(postCaption)}
-                className="w-full mt-1 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-center gap-1.5 hover:bg-slate-50 transition-colors"
+                onClick={handleCopyLinkOnly}
+                className="w-full mt-1 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-center gap-1.5 hover:bg-slate-50 transition-colors cursor-pointer"
               >
                 {showCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{showCopied ? 'ক্যাপশন কপি হয়েছে!' : 'পুরো ক্যাপশন ও লিঙ্ক কপি করুন'}</span>
               </button>
             </div>
 
-            {/* Direct Social Share Buttons List */}
+            {/* Direct Social Share Links List */}
             <div className="space-y-2">
-              <button
-                type="button"
-                onClick={handleFacebookShare}
+              <a
+                href={fbShareUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleFacebookClick}
                 className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-between shadow-md shadow-blue-600/20 active:scale-98 transition-all cursor-pointer"
               >
                 <span className="flex items-center gap-2">
@@ -657,11 +691,13 @@ export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) 
                   <span>ফেসবুকে এক ক্লিকে পোস্ট করুন</span>
                 </span>
                 <ExternalLink className="w-3.5 h-3.5 opacity-80" />
-              </button>
+              </a>
 
-              <button
-                type="button"
-                onClick={handleTikTokShare}
+              <a
+                href={tikTokShareUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleTikTokClick}
                 className="w-full py-2.5 px-4 bg-black hover:bg-slate-900 text-white rounded-xl text-xs font-bold flex items-center justify-between shadow-md active:scale-98 transition-all border border-slate-700 cursor-pointer"
               >
                 <span className="flex items-center gap-2">
@@ -671,11 +707,13 @@ export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) 
                   <span>টিকটকে শেয়ার করুন (ক্যাপশন সহ)</span>
                 </span>
                 <ExternalLink className="w-3.5 h-3.5 opacity-80" />
-              </button>
+              </a>
 
-              <button
-                type="button"
-                onClick={handleWhatsAppShare}
+              <a
+                href={waShareUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleWhatsAppClick}
                 className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-between shadow-md shadow-emerald-600/20 active:scale-98 transition-all cursor-pointer"
               >
                 <span className="flex items-center gap-2">
@@ -685,13 +723,13 @@ export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) 
                   <span>হোয়াটসঅ্যাপে পাঠান</span>
                 </span>
                 <ExternalLink className="w-3.5 h-3.5 opacity-80" />
-              </button>
+              </a>
             </div>
           </div>
         </div>
       )}
 
-      {/* Generated HD Card Download / Preview Modal */}
+      {/* Generated HD Card Download / Save Modal */}
       {previewImageData && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-5 shadow-2xl border border-emerald-200/80 dark:border-slate-800 space-y-4">
@@ -703,34 +741,49 @@ export const SmartCitizenIDCard: React.FC<SmartCitizenIDCardProps> = ({ user }) 
               <button
                 type="button"
                 onClick={() => setPreviewImageData(null)}
-                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Generated Image Preview */}
-            <div className="rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-slate-800">
+            <div className="rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950">
               <img src={previewImageData} alt="Citizen Card" className="w-full h-auto object-contain select-all" />
             </div>
 
             <p className="text-[11px] text-center text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
-              💡 গ্যালারিতে সরাসরি সেভ করতে উপরের ছবিটিতে <strong className="text-emerald-700 dark:text-emerald-400 font-bold">চাপ দিয়ে ধরে রাখুন (Long Press)</strong> এবং "Download image" এ চাপ দিন অথবা নিচের বাটনে চাপ দিন।
+              💡 মোবাইলে সরাসরি সেভ করতে উপরের ছবিটিতে <strong className="text-emerald-700 dark:text-emerald-400 font-bold">২ সেকেন্ড চাপ দিয়ে ধরে রাখুন (Long Press)</strong> এবং "Download Image" চাপুন, অথবা নিচের বাটন চাপুন।
             </p>
 
             <div className="flex flex-col gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => openBlobInNewTab(previewImageData)}
-                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer"
+              {/* Direct Anchor Download Link */}
+              <a
+                href={previewImageData}
+                download={fileName}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 cursor-pointer"
               >
-                <ExternalLink className="w-4 h-4" />
-                <span>নতুন ট্যাবে পুরো HD কার্ড ছবি খুলুন</span>
-              </button>
+                <Download className="w-4 h-4" />
+                <span>সরাসরি PNG ছবি ডাউনলোড করুন</span>
+              </a>
+
+              {/* Open in full tab anchor */}
+              <a
+                href={previewImageData}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>নতুন ট্যাবে ফুল HD ছবি দেখুন</span>
+              </a>
+
               <button
                 type="button"
                 onClick={() => setPreviewImageData(null)}
-                className="w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer"
+                className="w-full py-1.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-xs font-medium cursor-pointer"
               >
                 বন্ধ করুন
               </button>

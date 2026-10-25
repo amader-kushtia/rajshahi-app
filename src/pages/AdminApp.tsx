@@ -54,6 +54,7 @@ import {
   setAdminPinSessionVerified,
   DEFAULT_ADMIN_PIN
 } from '../utils/adminPinSecurity';
+import { isPhoneAdminHash } from '../utils/adminAuth';
 
 // Admin Sub-components
 import { AdminHeader } from '../components/admin/AdminHeader';
@@ -108,42 +109,29 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToCitizenApp }) => {
   const [adminRole, setAdminRole] = useState<'super_admin' | 'sub_admin'>(() => {
     return (sessionStorage.getItem('kushtia_connect_admin_role') as 'super_admin' | 'sub_admin') || 'super_admin';
   });
-  const [loginEmail, setLoginEmail] = useState('mh7539019@gmail.com');
+  const [loginPhone, setLoginPhone] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginFeedback, setLoginFeedback] = useState<LoginDetailedFeedback | null>(null);
-  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
-  const [isResetting, setIsResetting] = useState(false);
 
-  const handleEmailLoginSubmit = async (e: React.FormEvent) => {
+  const handlePhoneLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginFeedback(null);
-    setResetSuccess(null);
-    const email = loginEmail.trim().toLowerCase();
+    const phoneInput = loginPhone.trim().replace(/^(\+880|880)/, '0');
     const pass = loginPassword.trim();
+
     try {
-      try {
-        await loginWithCredentials(email, pass);
-      } catch (authErr: any) {
-        // Master override for authorized admin email or master password
-        if (pass === '123456' || email === 'mh7539019@gmail.com' || email.includes('admin')) {
-          const adminProf: UserProfile = {
-            uid: 'admin-' + email.replace(/[^a-z0-9]/g, ''),
-            displayName: 'প্রধান প্রশাসক (Admin)',
-            email: email,
-            role: 'admin',
-            isVerified: true,
-            photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=adminKushtia',
-            status: 'active'
-          };
-          updateUserProfile(adminProf);
-          try {
-            sessionStorage.setItem('kushtia_demo_user', JSON.stringify(adminProf));
-            localStorage.setItem('kushtia_user_profile', JSON.stringify(adminProf));
-          } catch {}
-        } else {
-          throw authErr;
-        }
+      const isMatchedAdmin = await isPhoneAdminHash(phoneInput);
+      if (!isMatchedAdmin) {
+        setLoginFeedback({
+          title: 'অননুমোদিত মোবাইল নম্বর',
+          message: 'প্রবেশকৃত মোবাইল নম্বরটি অ্যাডমিন লিস্টে নিবন্ধিত নয়। শুধুমাত্র অনুমোদিত অ্যাডমিন ফোন নম্বর দিয়ে প্রবেশ সম্ভব।',
+          checklist: ['সঠিক ১১ ডিজিটের মোবাইল নম্বর নিশ্চিত করুন', 'পাসওয়ার্ড সঠিকভাবে মিলিয়ে দিন'],
+          failedField: 'email'
+        });
+        return;
       }
+
+      await loginWithCredentials(phoneInput, pass);
 
       setIsUnlocked(true);
       setIsPinVerified(true);
@@ -156,18 +144,18 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToCitizenApp }) => {
       addActivityLog({
         type: 'login_attempt',
         title: 'অ্যাডমিন লগইন সফল',
-        description: `অ্যাডমিন অ্যাকাউন্ট (${email}) সফলভাবে কানেক্টেড এবং প্যানেলে লগইন সম্পন্ন হয়েছে।`,
-        actor: email
+        description: `অ্যাডমিন মোবাইল নাম্বার দিয়ে সফলভাবে প্যানেলে লগইন সম্পন্ন হয়েছে।`,
+        actor: 'অ্যাডমিন'
       });
     } catch (err: any) {
-      const fb = parseLoginError(err, email);
+      const fb = parseLoginError(err, phoneInput);
       setLoginFeedback(fb);
       
       addActivityLog({
         type: 'login_attempt',
         title: 'অ্যাডমিন লগইন ব্যর্থ',
-        description: `অ্যাডমিন অ্যাকাউন্ট (${email}) দিয়ে প্যানেলে অননুমোদিত লগইনের চেষ্টা করা হয়েছে। কারণ: ${fb.title || 'পাসওয়ার্ড ভুল'}`,
-        actor: email || 'অজ্ঞাত ব্যক্তি'
+        description: `প্যানেলে লগইনের চেষ্টা করা হয়েছে। কারণ: ${fb.title || 'পাসওয়ার্ড ভুল'}`,
+        actor: 'অজ্ঞাত ব্যক্তি'
       });
     }
   };
@@ -177,7 +165,7 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToCitizenApp }) => {
     setPinError(null);
     const cleanPin = pinInput.trim();
     if (!cleanPin || (cleanPin.length !== 6 && cleanPin.length !== 4)) {
-      setPinError('অনুগ্রহ করে সঠিক ৬-সংখ্যার পিন প্রদান করুন (ডিফল্ট: 123456)');
+      setPinError('অনুগ্রহ করে সঠিক ৬-সংখ্যার পিন প্রদান করুন');
       return;
     }
     setIsVerifyingPin(true);
@@ -191,50 +179,19 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToCitizenApp }) => {
         sessionStorage.setItem('kushtia_admin_auth', 'true');
         sessionStorage.setItem('kushtia_connect_admin_role', 'super_admin');
 
-        // Elevate current user to Admin if not already
-        const adminProf: UserProfile = {
-          uid: user?.uid || 'admin-kushtia-master',
-          displayName: user?.displayName && user.displayName !== 'সম্মানিত নাগরিক' ? user.displayName : 'প্রধান প্রশাসক (Admin)',
-          email: user?.email || 'mh7539019@gmail.com',
-          role: 'admin',
-          isVerified: true,
-          photoURL: user?.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=adminKushtia',
-          status: 'active'
-        };
-        updateUserProfile(adminProf);
-        try {
-          sessionStorage.setItem('kushtia_demo_user', JSON.stringify(adminProf));
-          localStorage.setItem('kushtia_user_profile', JSON.stringify(adminProf));
-        } catch {}
-
         addActivityLog({
           type: 'login_attempt',
           title: 'এডমিন পিন ভেরিফিকেশন সফল',
-          description: '৬-সংখ্যার সিকিউরিটি পিন (123456) সফলভাবে যাচাই হয়েছে এবং অ্যাডমিন সেশন আনলক হয়েছে।',
-          actor: adminProf.email || 'এডমিন'
+          description: 'সিকিউরিটি পিন সফলভাবে যাচাই হয়েছে এবং অ্যাডমিন সেশন আনলক হয়েছে।',
+          actor: 'এডমিন'
         });
       } else {
-        setPinError(res.error || 'ভুল পিন কোড! সঠিক ৬-সংখ্যার পিন দিন (ডিফল্ট: 123456)।');
+        setPinError(res.error || 'ভুল পিন কোড!');
       }
     } catch (err: any) {
       setPinError('পিন যাচাইকরণে সমস্যা হয়েছে। ইন্টারনেট সংযোগ পরীক্ষা করুন।');
     } finally {
       setIsVerifyingPin(false);
-    }
-  };
-
-  const handleAdminResetPassword = async () => {
-    const targetEmail = loginEmail.trim() || import.meta.env.VITE_ADMIN_EMAIL;
-    setIsResetting(true);
-    setLoginFeedback(null);
-    setResetSuccess(null);
-    try {
-      await sendPasswordResetEmail(auth, targetEmail);
-      setResetSuccess(`পাসওয়ার্ড রিসেট লিংক (${targetEmail}) ঠিকানায় পাঠানো হয়েছে। ইনবক্স বা স্প্যাম ফোল্ডার দেখুন।`);
-    } catch (err: any) {
-      setLoginFeedback(parseLoginError(err, targetEmail));
-    } finally {
-      setIsResetting(false);
     }
   };
 
@@ -679,16 +636,9 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToCitizenApp }) => {
             </form>
           )}
 
-          {/* MODE 2: EMAIL & PASSWORD */}
+          {/* MODE 2: PHONE & PASSWORD */}
           {authMode === 'email' && (
-            <form onSubmit={handleEmailLoginSubmit} className="space-y-4 relative z-10">
-              {resetSuccess && (
-                <div className="p-3 bg-emerald-950/70 border border-emerald-800/80 rounded-2xl text-emerald-300 text-xs font-semibold flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>{resetSuccess}</span>
-                </div>
-              )}
-
+            <form onSubmit={handlePhoneLoginSubmit} className="space-y-4 relative z-10">
               {loginFeedback && (
                 <div className="p-3.5 bg-rose-950/80 border border-rose-800/80 rounded-2xl text-rose-200 text-xs space-y-2">
                   <div className="flex items-center gap-2 text-rose-300 font-bold">
@@ -700,13 +650,13 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToCitizenApp }) => {
               )}
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">ইমেইল ঠিকানা</label>
+                <label className="text-xs font-bold text-slate-300 block mb-1">অ্যাডমিন মোবাইল নাম্বার</label>
                 <input
-                  type="email"
+                  type="tel"
                   required
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="mh7539019@gmail.com"
+                  value={loginPhone}
+                  onChange={(e) => setLoginPhone(e.target.value)}
+                  placeholder="017xxxxxxxx"
                   className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-2xl text-white text-xs focus:outline-none focus:border-emerald-500 font-mono"
                 />
               </div>
@@ -718,12 +668,9 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToCitizenApp }) => {
                   required
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="123456"
+                  placeholder="আপনার পাসওয়ার্ড দিন"
                   className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-2xl text-white text-xs focus:outline-none focus:border-emerald-500 font-mono"
                 />
-                <div className="text-[11px] text-slate-500 mt-1">
-                  মাস্টার পাসওয়ার্ড: <span className="text-emerald-400 font-mono font-bold">123456</span>
-                </div>
               </div>
 
               <button

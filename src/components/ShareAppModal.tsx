@@ -17,6 +17,53 @@ interface ShareAppModalProps {
   onClose: () => void;
 }
 
+// Robust cross-platform copy utility (works on iOS, Android, Desktop, PWA, and iframe contexts)
+export const copyTextToClipboard = async (text: string): Promise<boolean> => {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      console.warn('Async clipboard writeText warning, trying fallback:', e);
+    }
+  }
+
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.fontSize = '12pt';
+    textArea.style.border = '0';
+    textArea.style.padding = '0';
+    textArea.style.margin = '0';
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    textArea.style.top = '-9999px';
+    
+    document.body.appendChild(textArea);
+
+    if (navigator.userAgent.match(/ipad|iphone/i)) {
+      const range = document.createRange();
+      range.selectNodeContents(textArea);
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+      textArea.setSelectionRange(0, 999999);
+    } else {
+      textArea.focus();
+      textArea.select();
+    }
+
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (err) {
+    console.warn('ExecCommand fallback error:', err);
+    return false;
+  }
+};
+
 export const ShareAppModal: React.FC<ShareAppModalProps> = ({ isOpen, onClose }) => {
   const { themeConfig } = useAdminConfig();
   const [copied, setCopied] = useState(false);
@@ -51,39 +98,8 @@ export const ShareAppModal: React.FC<ShareAppModalProps> = ({ isOpen, onClose })
     localStorage.setItem('kushtia_share_count', newCount.toString());
   };
 
-  // Synchronous + Async multi-layer Clipboard Copy for mobile browsers & PWA wrappers
-  const copyToClipboard = (customMsg = 'অ্যাপ লিঙ্ক ও বার্তা সফলভাবে কপি হয়েছে!') => {
-    let success = false;
-    try {
-      const textarea = document.createElement('textarea');
-      textarea.value = shareText;
-      textarea.style.position = 'fixed';
-      textarea.style.left = '-9999px';
-      textarea.style.top = '-9999px';
-      textarea.setAttribute('readonly', '');
-      document.body.appendChild(textarea);
-      textarea.focus();
-      textarea.select();
-      textarea.setSelectionRange(0, 99999);
-      success = document.execCommand('copy');
-      document.body.removeChild(textarea);
-    } catch (err) {
-      console.warn('execCommand copy warning:', err);
-    }
-
-    if (!success && navigator.clipboard) {
-      navigator.clipboard.writeText(shareText).then(() => {
-        setCopied(true);
-        triggerToast(customMsg);
-        trackShare();
-        setTimeout(() => setCopied(false), 2500);
-      }).catch(e => {
-        console.warn('Async writeText fallback warning:', e);
-        triggerToast('লিঙ্ক সিলেক্ট করে কপি করুন।');
-      });
-      return;
-    }
-
+  const handleCopyLink = async (customMsg = 'অ্যাপ লিঙ্ক ও বার্তা সফলভাবে কপি হয়েছে!') => {
+    const success = await copyTextToClipboard(shareText);
     if (success) {
       setCopied(true);
       triggerToast(customMsg);
@@ -104,33 +120,18 @@ export const ShareAppModal: React.FC<ShareAppModalProps> = ({ isOpen, onClose })
         });
         trackShare();
       } catch (err) {
-        console.warn('Native share error or dismissed:', err);
-        copyToClipboard();
+        console.warn('Native share dismissed or not supported:', err);
+        handleCopyLink();
       }
     } else {
-      copyToClipboard();
+      handleCopyLink();
     }
   };
 
-  const shareFacebook = () => {
-    copyToClipboard('ফেসবুক পোস্ট বিবরণ ও লিঙ্ক কপি হয়েছে!');
-    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(appLink)}&quote=${encodeURIComponent(shareText)}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
-    trackShare();
-  };
-
-  const shareTikTok = () => {
-    copyToClipboard('টিকটক ক্যাপশন ও অ্যাপ লিঙ্ক কপি হয়েছে! টিকটকে পেস্ট করে শেয়ার করুন।');
-    window.open('https://www.tiktok.com/upload', '_blank', 'noopener,noreferrer');
-    trackShare();
-  };
-
-  const shareWhatsApp = () => {
-    copyToClipboard('হোয়াটসঅ্যাপ বার্তা কপি হয়েছে!');
-    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
-    trackShare();
-  };
+  // Direct Social URLs
+  const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(appLink)}&quote=${encodeURIComponent(shareText)}`;
+  const whatsAppShareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+  const tikTokShareUrl = `https://www.tiktok.com/upload`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -195,22 +196,34 @@ export const ShareAppModal: React.FC<ShareAppModalProps> = ({ isOpen, onClose })
               <span className="text-[9.5px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">অন্যান্য<br/>(Share)</span>
             </button>
 
-            {/* Facebook */}
-            <button
-              type="button"
-              onClick={shareFacebook}
+            {/* Facebook (Native HTML Anchor tag for 100% reliable opening on mobile/PWA) */}
+            <a
+              href={facebookShareUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => {
+                copyTextToClipboard(shareText);
+                triggerToast('ফেসবুক পোস্ট বিবরণ ও লিঙ্ক কপি হয়েছে!');
+                trackShare();
+              }}
               className="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-[#1877F2]/10 transition-colors group cursor-pointer"
             >
               <div className="w-11 h-11 bg-[#1877F2]/10 group-hover:bg-[#1877F2]/20 text-[#1877F2] rounded-full flex items-center justify-center transition-colors shadow-xs">
                 <Facebook className="w-5 h-5" />
               </div>
               <span className="text-[9.5px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">ফেসবুক<br/>পোস্ট</span>
-            </button>
+            </a>
 
-            {/* TikTok */}
-            <button
-              type="button"
-              onClick={shareTikTok}
+            {/* TikTok (Native HTML Anchor tag) */}
+            <a
+              href={tikTokShareUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => {
+                copyTextToClipboard(shareText);
+                triggerToast('টিকটক ক্যাপশন ও লিঙ্ক কপি হয়েছে! টিকটকে পেস্ট করুন।');
+                trackShare();
+              }}
               className="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-slate-900/10 dark:hover:bg-slate-700/30 transition-colors group cursor-pointer"
             >
               <div className="w-11 h-11 bg-black text-white rounded-full flex items-center justify-center transition-transform group-hover:scale-105 shadow-xs">
@@ -219,24 +232,30 @@ export const ShareAppModal: React.FC<ShareAppModalProps> = ({ isOpen, onClose })
                 </svg>
               </div>
               <span className="text-[9.5px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">টিকটক<br/>পোস্ট</span>
-            </button>
+            </a>
 
-            {/* WhatsApp */}
-            <button
-              type="button"
-              onClick={shareWhatsApp}
+            {/* WhatsApp (Native HTML Anchor tag) */}
+            <a
+              href={whatsAppShareUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => {
+                copyTextToClipboard(shareText);
+                triggerToast('হোয়াটসঅ্যাপ বার্তা কপি হয়েছে!');
+                trackShare();
+              }}
               className="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-[#25D366]/10 transition-colors group cursor-pointer"
             >
               <div className="w-11 h-11 bg-[#25D366]/10 group-hover:bg-[#25D366]/20 text-[#25D366] rounded-full flex items-center justify-center transition-colors shadow-xs">
                 <MessageCircle className="w-5 h-5" />
               </div>
               <span className="text-[9.5px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">হোয়াটস<br/>অ্যাপ</span>
-            </button>
+            </a>
 
             {/* Copy Link */}
             <button
               type="button"
-              onClick={() => copyToClipboard()}
+              onClick={() => handleCopyLink()}
               className="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors group cursor-pointer"
             >
               <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors shadow-xs ${copied ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 dark:bg-slate-800 group-hover:bg-emerald-100 text-slate-700 dark:text-slate-200 group-hover:text-emerald-700'}`}>
@@ -262,4 +281,3 @@ export const ShareAppModal: React.FC<ShareAppModalProps> = ({ isOpen, onClose })
     </div>
   );
 };
-

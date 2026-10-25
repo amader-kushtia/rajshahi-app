@@ -170,39 +170,46 @@ export const parseLoginError = (err: any, emailInput: string): LoginDetailedFeed
   };
 };
 
+import { isPhoneAdminHash } from '../utils/adminAuth';
+
 export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onNavigate, onOpenAdminPanel }) => {
   const { loginWithCredentials } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [resetLoading, setResetLoading] = useState(false);
   const [feedback, setFeedback] = useState<LoginDetailedFeedback | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || 'mh7539019@gmail.com').toLowerCase();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setFeedback(null);
     setSuccessMessage('');
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanPass = password.trim();
-    const isAdminAccount = cleanEmail === ADMIN_EMAIL || cleanEmail === 'mh7539019@gmail.com' || cleanPass === '123456';
+    
+    const cleanPhone = phone.trim().replace(/^(\+880|880)/, '0');
+    const isBdPhone = /^01[3-9]\d{8}$/.test(cleanPhone);
+
+    if (!isBdPhone && !cleanPhone.includes('01')) {
+      setFeedback({
+        title: 'সঠিক মোবাইল নম্বর দিন',
+        message: 'অনুগ্রহ করে ১১ ডিজিটের সঠিক বাংলাদেশী মোবাইল নম্বর দিন (যেমন: 01712345678)।',
+        checklist: ['১১ ডিজিটের নম্বর সঠিক রয়েছে কিনা পরীক্ষা করুন', 'নম্বরের শুরুতে 017, 018, 019 ইত্যাদি ব্যবহার করুন'],
+        failedField: 'email'
+      });
+      setLoading(false);
+      return;
+    }
 
     try {
-      try {
-        await loginWithCredentials(email, password);
-      } catch (authErr) {
-        if (isAdminAccount || cleanPass === '123456') {
-          sessionStorage.setItem('kushtia_admin_auth', 'true');
-          sessionStorage.setItem('kushtia_connect_admin_session_unlocked', 'true');
-          sessionStorage.setItem('rajshahi_admin_pin_verified', 'true');
-        } else {
-          throw authErr;
-        }
-      }
+      const isAdminAcc = await isPhoneAdminHash(cleanPhone);
 
-      if (isAdminAccount || cleanEmail === ADMIN_EMAIL) {
+      // Authenticate with Firebase Auth strictly validating password
+      await loginWithCredentials(cleanPhone, password);
+
+      if (isAdminAcc) {
+        sessionStorage.setItem('kushtia_admin_auth', 'true');
+        sessionStorage.setItem('kushtia_connect_admin_session_unlocked', 'true');
+        sessionStorage.setItem('rajshahi_admin_pin_verified', 'true');
         if (onOpenAdminPanel) {
           onOpenAdminPanel();
         } else {
@@ -212,56 +219,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onNavigate, onOpen
         onBack();
       }
     } catch (err: any) {
-      const detailedFeedback = parseLoginError(err, email);
+      const detailedFeedback = parseLoginError(err, cleanPhone);
       setFeedback(detailedFeedback);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleForgotPassword = async () => {
-    const targetEmail = email.trim();
-    if (!targetEmail) {
-      setFeedback({
-        title: 'ইমেইল প্রয়োজন',
-        message: 'পাসওয়ার্ড রিসেট করতে অনুগ্রহ করে নিচের ঘরে আপনার ইমেইল ঠিকানাটি লিখুন।',
-        checklist: ['ইমেইল লেখার পর পুনরায় "পাসওয়ার্ড ভুলে গেছেন?" বা রিসেট বাটনে ক্লিক করুন।'],
-        failedField: 'email'
-      });
-      setSuccessMessage('');
-      return;
-    }
-
-    setResetLoading(true);
-    setFeedback(null);
-    setSuccessMessage('');
-
-    console.log('[Auth Debug] Attempting password reset email for:', targetEmail);
-    console.log('[Auth Debug] Firebase Auth Config State:', {
-      authDomain: auth.app.options.authDomain,
-      projectId: auth.app.options.projectId,
-      hasApiKey: !!auth.app.options.apiKey
+  const handleForgotPassword = () => {
+    setFeedback({
+      title: 'পাসওয়ার্ড পুনরুদ্ধার সহায়তা',
+      message: 'পাসওয়ার্ড রিভোট বা পরিবর্তন করতে আপনার নিবন্ধিত মোবাইল নাম্বার সহ কুষ্টিয়া অ্যাডমিন টিমের সাথে যোগাযোগ করুন।',
+      checklist: ['আপনার ১১ ডিজিটের মোবাইল নম্বরটি সাথে রাখুন', 'পরিচয় নিশ্চিতকরণের পর নিরাপদ পাসওয়ার্ড প্রদান করা হবে'],
+      failedField: 'password'
     });
-
-    try {
-      await sendPasswordResetEmail(auth, targetEmail);
-      console.log('[Auth Debug] Password reset email sent successfully to:', targetEmail);
-      setSuccessMessage(`আপনার (${targetEmail}) ঠিকানায় পাসওয়ার্ড রিসেট লিংক পাঠানো হয়েছে। ইনবক্স বা স্প্যাম ফোল্ডার চেক করুন।`);
-    } catch (err: any) {
-      console.error('[Auth Debug] Password reset email failed with error:', {
-        code: err?.code,
-        message: err?.message,
-        email: targetEmail
-      });
-      if (err?.code === 'auth/user-not-found') {
-        setSuccessMessage(`আপনার এই ইমেইলটি (${targetEmail}) আমাদের ডাটাবেজে নতুন। আপনি যেকোনো পাসওয়ার্ড দিয়ে সরাসরি "লগইন করুন" বাটনে ক্লিক করে অ্যাকাউন্ট চালু করতে পারেন।`);
-      } else {
-        const resetFeedback = parseLoginError(err, targetEmail);
-        setFeedback(resetFeedback);
-      }
-    } finally {
-      setResetLoading(false);
-    }
   };
 
   return (
@@ -375,17 +346,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onNavigate, onOpen
               <div className="pt-2.5 border-t border-rose-200/70 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
                 <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>অ্যাডমিন নিরাপত্তা রিকভারি</span>
+                  <span>অ্যাডমিন সহায়তা</span>
                 </div>
 
                 <button
                   type="button"
                   onClick={handleForgotPassword}
-                  disabled={resetLoading}
-                  className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 active:scale-98 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
+                  className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 active:scale-98 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <KeyRound className="w-3.5 h-3.5" />
-                  <span>{resetLoading ? 'পাঠানো হচ্ছে...' : 'এডমিন পাসওয়ার্ড রিসেট লিংক পাঠান'}</span>
+                  <span>অ্যাডমিন পাসওয়ার্ড সহায়তা</span>
                 </button>
               </div>
             )}
@@ -394,17 +364,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onNavigate, onOpen
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">মোবাইল নাম্বার বা ইমেইল</label>
+            <label className="block text-sm font-bold text-slate-700 mb-2">মোবাইল নাম্বার</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                 <Phone className={`h-5 w-5 ${feedback?.failedField === 'email' || feedback?.failedField === 'both' ? 'text-rose-500' : 'text-slate-400'}`} />
               </div>
               <input
-                type="text"
+                type="tel"
                 required
-                value={email}
+                value={phone}
                 onChange={(e) => {
-                  setEmail(e.target.value);
+                  setPhone(e.target.value);
                   if (feedback?.failedField === 'email' || feedback?.failedField === 'both') {
                     setFeedback(null);
                   }
@@ -414,7 +384,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onNavigate, onOpen
                     ? 'bg-rose-50/40 border-2 border-rose-400 text-rose-950 focus:ring-2 focus:ring-rose-400/20'
                     : 'bg-slate-50 border border-pink-200/80 text-slate-900 focus:ring-2 focus:ring-pink-500/20 focus:border-emerald-500'
                 }`}
-                placeholder="017xxxxxxxx বা admin@email.com"
+                placeholder="017xxxxxxxx"
               />
             </div>
           </div>
@@ -425,10 +395,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onNavigate, onOpen
               <button
                 type="button"
                 onClick={handleForgotPassword}
-                disabled={resetLoading}
-                className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:underline transition-colors disabled:opacity-50"
+                className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:underline transition-colors"
               >
-                {resetLoading ? 'পাঠানো হচ্ছে...' : 'পাসওয়ার্ড ভুলে গেছেন?'}
+                পাসওয়ার্ড ভুলে গেছেন?
               </button>
             </div>
             <div className="relative">
@@ -450,7 +419,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onNavigate, onOpen
                     ? 'bg-rose-50/40 border-2 border-rose-400 text-rose-950 focus:ring-2 focus:ring-rose-400/20'
                     : 'bg-slate-50 border border-pink-200/80 text-slate-900 focus:ring-2 focus:ring-pink-500/20 focus:border-emerald-500'
                 }`}
-                placeholder="আপনার পাসওয়ার্ড দিন (এডমিন: 123456)"
+                placeholder="আপনার পাসওয়ার্ড দিন"
               />
             </div>
           </div>
@@ -463,30 +432,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onNavigate, onOpen
             {loading ? 'অপেক্ষা করুন...' : 'লগইন করুন'}
           </button>
         </form>
-
-        {/* Dedicated Admin Portal Quick Launcher Banner */}
-        <div className="mt-5 p-3.5 bg-slate-950 rounded-2xl border border-slate-800 shadow-md flex items-center justify-between">
-          <div className="flex items-center gap-2.5 text-white">
-            <div className="w-9 h-9 rounded-xl bg-emerald-900/70 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-700/50">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-xs font-bold text-white block">অ্যাডমিন কন্ট্রোল প্যানেল</span>
-              <span className="text-[10px] text-emerald-400 font-medium block">মাস্টার পিন: 123456</span>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              if (onOpenAdminPanel) onOpenAdminPanel();
-              else onNavigate('admin-panel' as any);
-            }}
-            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1 cursor-pointer active:scale-95"
-          >
-            <span>প্রবেশ</span>
-            <span>→</span>
-          </button>
-        </div>
 
         <div className="mt-8">
           <div className="relative flex py-3 items-center">

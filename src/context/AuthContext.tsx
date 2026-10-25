@@ -12,18 +12,7 @@ import {
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { UserProfile } from '../types';
-import { isUserAdmin, verifyCustomClaimsAdmin } from '../utils/adminAuth';
-
-// ... (keep interface and imports)
-// Remove ADMIN_EMAIL everywhere it's used inside AuthContext.tsx
-
-// In useEffect:
-// const isEmailAdmin = fbEmail === ADMIN_EMAIL.toLowerCase(); // REMOVE
-// const isAdminAccount = isCustomClaimAdmin; // UPDATE
-
-// In loginWithCredentials:
-// const isAdminEmail = cleanEmail === ADMIN_EMAIL.toLowerCase() || ... // REMOVE
-// If you want to keep admin login, it must be handled via custom claims, not email.
+import { isUserAdmin, verifyCustomClaimsAdmin, isPhoneAdminHash } from '../utils/adminAuth';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -34,7 +23,7 @@ interface AuthContextType {
   openAuthModal: () => void;
   closeAuthModal: () => void;
   loginAsDemoUser: (name?: string) => void;
-  loginWithCredentials: (email: string, pass: string) => Promise<void>;
+  loginWithCredentials: (phoneOrEmail: string, pass: string) => Promise<void>;
   logOut: () => Promise<void>;
   updateUserProfile: (profile: UserProfile) => void;
 }
@@ -48,7 +37,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [customClaims, setCustomClaims] = useState<Record<string, any> | null>(null);
   const updateUserProfile = (profile: UserProfile) => {
     setUser(profile);
-    // Persist profile to localStorage as a secondary cache for refresh stability
     try {
       localStorage.setItem('kushtia_user_profile', JSON.stringify(profile));
     } catch (e) {
@@ -58,11 +46,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [user, setUser] = useState<UserProfile | null>(() => {
     try {
-      // 1. Check Demo User in Session
       const demo = sessionStorage.getItem('kushtia_demo_user');
       if (demo) return JSON.parse(demo);
 
-      // 2. Check Persisted Profile in LocalStorage (Survives Refresh)
       const persisted = localStorage.getItem('kushtia_user_profile');
       if (persisted) return JSON.parse(persisted);
     } catch (e) {
@@ -77,7 +63,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (fbUser) {
         sessionStorage.removeItem('kushtia_demo_user');
         
-        // Listen to user document in real-time to detect ban/block status changes instantly
         const userRef = doc(db, 'users', fbUser.uid);
         const unsubUser = onSnapshot(userRef, async (docSnap) => {
           let claims: Record<string, any> | null = null;
@@ -94,15 +79,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             extraData = docSnap.data() as Partial<UserProfile>;
           }
 
-          const fbEmail = (fbUser.email || extraData.email || '').trim().toLowerCase();
-          const fbPhone = (extraData.phone || fbUser.phoneNumber || '').trim();
-          // Check if current user is admin
-          const envAdmin1 = (import.meta.env.VITE_ADMIN_EMAIL || '').toLowerCase();
-          const envAdmin2 = (import.meta.env.VITE_ADMIN_EMAIL_2 || '').toLowerCase();
-          const allowedAdminEmails = ['habiburrahman962540@gmail.com', 'mh7539019@gmail.com', envAdmin1, envAdmin2].filter(Boolean);
-          const allowedAdminPhones = ['01790563831', '01789344517'];
-          const isHardcodedAdmin = Boolean((fbEmail && allowedAdminEmails.includes(fbEmail)) || (fbPhone && allowedAdminPhones.includes(fbPhone)));
-          const isAdminAccount = verifyCustomClaimsAdmin(claims) || isHardcodedAdmin || extraData.role === 'admin';
+          const fbPhone = (extraData.phone || fbUser.phoneNumber || fbUser.email?.split('@')[0] || '').trim();
+          const isPhoneAdmin = await isPhoneAdminHash(fbPhone);
+          const isAdminAccount = verifyCustomClaimsAdmin(claims) || isPhoneAdmin || extraData.role === 'admin';
 
           const profile: UserProfile = {
             uid: fbUser.uid,
@@ -124,7 +103,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             dob: extraData.dob,
           };
 
-          // Auto-sync admin role to Firestore if identified as admin via hardcoded list but doc is missing role
           if (isAdminAccount && extraData.role !== 'admin' && fbUser.uid) {
             setDoc(userRef, { role: 'admin' }, { merge: true }).catch(err => {
               console.warn('Could not sync admin role to document:', err);
@@ -132,7 +110,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           setUser(profile);
-          // Sync to localStorage
           try {
             localStorage.setItem('kushtia_user_profile', JSON.stringify(profile));
           } catch (e) {}
@@ -171,8 +148,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [loading, setLoading] = useState<boolean>(true);
 
-  const loginWithCredentials = async (emailInput: string, passInput: string) => {
-    let cleanInput = emailInput.trim();
+  const loginWithCredentials = async (phoneOrEmail: string, passInput: string) => {
+    let cleanInput = phoneOrEmail.trim();
     if (!cleanInput.includes('@')) {
       const normalizedPhone = cleanInput.replace(/^(\+880|880)/, '0');
       cleanInput = `${normalizedPhone}@kushtiaconnect.local`;
@@ -180,32 +157,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       cleanInput = cleanInput.toLowerCase();
     }
 
-    const adminEmails = ['habiburrahman962540@gmail.com', 'mh7539019@gmail.com'];
-    const adminPhones = ['01790563831', '01789344517'];
     const phonePart = cleanInput.split('@')[0];
-    const isAdminEmail = adminEmails.includes(cleanInput) || adminPhones.includes(phonePart);
+    const isMatchedAdminPhone = await isPhoneAdminHash(phonePart);
 
     try {
       await signInWithEmailAndPassword(auth, cleanInput, passInput);
     } catch (err: any) {
-      if (isAdminEmail) {
+      // If user account is not registered yet in Firebase Auth, auto-create it for authorized admin
+      if ((err?.code === 'auth/user-not-found' || err?.code === 'auth/invalid-credential') && isMatchedAdminPhone) {
         try {
           await createUserWithEmailAndPassword(auth, cleanInput, passInput);
         } catch (createErr: any) {
-          console.warn('Admin auto-create notice:', createErr);
+          // If creation fails because user already exists or weak password, rethrow error
+          throw err;
         }
-        const adminProfile: UserProfile = {
-          uid: 'admin-' + cleanInput.replace(/[^a-z0-9]/g, ''),
-          displayName: 'প্রধান প্রশাসক (Admin)',
-          email: cleanInput,
-          role: 'admin',
-          isVerified: true,
-          photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=adminKushtia',
-          status: 'active'
-        };
-        setUser(adminProfile);
-        sessionStorage.setItem('kushtia_demo_user', JSON.stringify(adminProfile));
       } else {
+        // ALWAYS rethrow password or authentication errors
         throw err;
       }
     }
@@ -242,7 +209,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
 
-  const isAdmin = isUserAdmin(user, customClaims, firebaseUser?.email);
+  const isAdmin = isUserAdmin(user, customClaims);
 
   return (
     <AuthContext.Provider
