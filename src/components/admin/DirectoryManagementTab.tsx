@@ -22,9 +22,11 @@ import {
   getManagedDoctors, 
   saveDoctor, 
   deleteDoctor, 
+  subscribeToDoctors,
   getManagedHelplines, 
   saveHelpline, 
-  deleteHelpline 
+  deleteHelpline,
+  subscribeToHelplines
 } from '../../services/adminFeaturesService';
 
 export const DirectoryManagementTab: React.FC = () => {
@@ -60,16 +62,17 @@ export const DirectoryManagementTab: React.FC = () => {
   const [helpAddress, setHelpAddress] = useState('');
   const [helpHours, setHelpHours] = useState('২৪ ঘণ্টা');
 
-  const refreshData = () => {
-    setDoctors(getManagedDoctors());
-    setHelplines(getManagedHelplines());
-  };
-
   useEffect(() => {
-    refreshData();
-    const handleUpdate = () => refreshData();
-    window.addEventListener('kushtia-directory-updated', handleUpdate);
-    return () => window.removeEventListener('kushtia-directory-updated', handleUpdate);
+    const unsubDocs = subscribeToDoctors((data) => {
+      setDoctors(data);
+    });
+    const unsubHelps = subscribeToHelplines((data) => {
+      setHelplines(data);
+    });
+    return () => {
+      unsubDocs();
+      unsubHelps();
+    };
   }, []);
 
   // Doctor Form Handlers
@@ -137,7 +140,7 @@ export const DirectoryManagementTab: React.FC = () => {
       setHelpDept('কুষ্টিয়া প্রশাসন');
       setHelpNumber('');
       setHelpAltNumber('');
-      setHelpAddress('কুষ্টিয়া, নীলফামারী');
+      setHelpAddress('কুষ্টিয়া সদর, কুষ্টিয়া');
       setHelpHours('২৪ ঘণ্টা খোলা');
     }
     setIsHelplineModalOpen(true);

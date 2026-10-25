@@ -1,7 +1,7 @@
 {
-  "name": "saidpur-connect-functions",
+  "name": "kushtia-connect-functions",
   "version": "1.0.0",
-  "description": "Firebase Cloud Functions for Saidpur Connect - Scheduled Weather Sync and Background Tasks",
+  "description": "Firebase Cloud Functions for Kushtia Connect - Scheduled Weather Sync and Background Tasks",
   "scripts": {
     "build": "tsc",
     "serve": "npm run build && firebase emulators:start --only functions",

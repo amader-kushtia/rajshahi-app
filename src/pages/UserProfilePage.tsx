@@ -24,9 +24,11 @@ import {
   Camera,
   Calendar,
   Copy,
-  Check
+  Check,
+  Droplet
 } from 'lucide-react';
 import { BalanceCard } from '../components/BalanceCard';
+import { SmartCitizenIDCard } from '../components/SmartCitizenIDCard';
 import { useAuth } from '../context/AuthContext';
 import { PostItem, CategoryType, UserProfile, PostDraftItem } from '../types';
 import { getUserSubmittedPostIds, getMasterPosts, fetchUserPostsFromFirestore } from '../services/postService';
@@ -68,6 +70,10 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
   const [editWard, setEditWard] = useState('');
   const [editAddress, setEditAddress] = useState('');
   const [editPhotoURL, setEditPhotoURL] = useState('');
+  const [editBloodGroup, setEditBloodGroup] = useState('');
+  const [editUpazila, setEditUpazila] = useState('');
+  const [editProfession, setEditProfession] = useState('');
+  const [editDob, setEditDob] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editError, setEditError] = useState('');
@@ -78,6 +84,10 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
     setEditWard(user?.ward || '');
     setEditAddress(user?.address || '');
     setEditPhotoURL(user?.photoURL || '');
+    setEditBloodGroup(user?.bloodGroup || '');
+    setEditUpazila(user?.upazila || '');
+    setEditProfession(user?.profession || '');
+    setEditDob(user?.dob || '');
     setEditError('');
     setIsEditing(true);
   };
@@ -167,6 +177,10 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
         ward: editWard.trim(),
         address: editAddress.trim(),
         photoURL: editPhotoURL.trim(),
+        bloodGroup: editBloodGroup.trim(),
+        upazila: editUpazila.trim(),
+        profession: editProfession.trim(),
+        dob: editDob.trim(),
       };
 
       if (user.uid && !user.uid.startsWith('demo-') && !user.uid.startsWith('citizen-')) {
@@ -313,100 +327,17 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
     <div className="space-y-5 pb-28 animate-in fade-in duration-200">
       {/* User Account Card */}
       <BalanceCard currentUser={user} onOpenAuth={openAuthModal} />
+
+      {user && (
+        <div className="px-1">
+          <SmartCitizenIDCard user={user} />
+        </div>
+      )}
           {user ? (
-            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-200/80/80 dark:border-slate-800/80 shadow-xs relative overflow-hidden">
-              
-              {/* Premium Background Cover Mesh Banner */}
-              <div className="h-28 bg-gradient-to-r from-emerald-500/10 via-emerald-600/15 to-teal-600/5 relative overflow-hidden border-b border-pink-100/60 dark:border-slate-800/40">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(5,150,105,0.08),transparent_50%)]" />
-                <div className="absolute right-6 top-5 flex items-center gap-1 bg-white/70 dark:bg-slate-950/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/50 dark:border-slate-800/50">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                  <span className="text-[10px] font-black text-slate-800 dark:text-slate-200 tracking-wider">PREMIUM CITIZEN</span>
-                </div>
-              </div>
-
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800/80 shadow-xs relative overflow-hidden">
               {/* Main Profile Info Section */}
-              <div className="px-5 pb-5 pt-0 relative">
-                {/* Overlapping Avatar Area */}
-                <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 -mt-10 mb-4">
-                  <div className="relative group shrink-0">
-                    <div className="w-20 h-20 rounded-3xl overflow-hidden shadow-xl ring-4 ring-white dark:ring-slate-900 bg-slate-100 dark:bg-slate-800 flex items-center justify-center transition-transform group-hover:scale-102">
-                      {user.photoURL && user.photoURL !== 'initials' && !user.photoURL.startsWith('demo-') ? (
-                        <img
-                          src={user.photoURL}
-                          alt={user.displayName}
-                          referrerPolicy="no-referrer"
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.onerror = null;
-                            e.currentTarget.src = ''; // fallbacks to initials below
-                          }}
-                        />
-                      ) : (
-                        <div className={`w-full h-full bg-gradient-to-br ${avatarGradient} flex items-center justify-center text-white font-black text-3xl shadow-inner`}>
-                          {initialLetter}
-                        </div>
-                      )}
-                    </div>
-                    {user.isVerified && (
-                      <span className="absolute bottom-0 right-0 bg-blue-500 text-white p-1 rounded-full shadow-md ring-3 ring-white dark:ring-slate-900 flex items-center justify-center">
-                        <ShieldCheck className="w-4 h-4" />
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="text-center sm:text-left flex-1 pb-1">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 justify-center sm:justify-start">
-                      <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-wide">
-                        {user.displayName}
-                      </h3>
-                      <div className="flex items-center justify-center sm:justify-start gap-1.5 mt-0.5 sm:mt-0">
-                        {user.isVerified ? (
-                          <span className="text-[10px] bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
-                            <ShieldCheck className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                            <span>অনুমোদিত নাগরিক</span>
-                          </span>
-                        ) : (
-                          <button 
-                            onClick={() => alert("ভেরিফিকেশনের অনুরোধ পাঠানো হয়েছে। অ্যাডমিন প্যানেল থেকে খুব শীঘ্রই আপনার প্রোফাইল ভেরিফাই করা হবে।")}
-                            className="text-[9px] bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/30 border border-pink-200/80 dark:border-slate-700 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1 transition-colors"
-                          >
-                            <Shield className="w-3 h-3" />
-                            ভেরিফাই করুন
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
-                      {user.email || 'কুষ্টিয়া, বাংলাদেশ'}
-                    </p>
-
-                    {user.citizenId && (
-                      <div className="mt-1.5 flex items-center justify-center sm:justify-start gap-1.5 text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">
-                        <span className="opacity-70">UID:</span>
-                        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-pink-200/80 dark:border-slate-700">
-                          <span className="text-slate-900 dark:text-slate-200">
-                            {user.citizenId}
-                          </span>
-                          <button 
-                            onClick={() => handleCopyId(user.citizenId!)}
-                            className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors text-slate-400 hover:text-emerald-600"
-                            title="ID কপি করুন"
-                          >
-                            {isCopied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-[10px] text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-100/70 dark:border-emerald-900/30">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Firebase Auth Verified</span>
-                    </div>
-                  </div>
-                </div>
-
+              <div className="px-5 pb-5 pt-5 relative">
+                
                 {/* Dynamic User Stats Grid */}
                 <div className="grid grid-cols-3 gap-2 py-3.5 px-4 mb-4 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-pink-100 dark:border-slate-800/60 text-center">
                   <div>
@@ -516,6 +447,20 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
                         />
                       </div>
 
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-slate-600 dark:text-slate-400 mb-1">উপজেলা</label>
+                        <select
+                          value={editUpazila}
+                          onChange={(e) => setEditUpazila(e.target.value)}
+                          className="w-full px-3.5 py-3 text-xs rounded-2xl border border-pink-200/80 dark:border-slate-800 focus:outline-hidden focus:border-pink-600 dark:focus:border-emerald-500 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-medium"
+                        >
+                          <option value="">উপজেলা সিলেক্ট করুন</option>
+                          {['কুষ্টিয়া সদর', 'কুমারখালী', 'খোকসা', 'মিরপুর', 'ভেড়ামারা', 'দৌলতপুর'].map(up => (
+                            <option key={up} value={up}>{up}</option>
+                          ))}
+                        </select>
+                      </div>
+
                       <div className="grid grid-cols-2 gap-2.5">
                         <div>
                           <label className="block text-[11px] font-extrabold text-slate-600 dark:text-slate-400 mb-1">ওয়ার্ড / এলাকা</label>
@@ -537,6 +482,42 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
                             className="w-full px-3.5 py-3 text-xs rounded-2xl border border-pink-200/80 dark:border-slate-800 focus:outline-hidden focus:border-pink-600 dark:focus:border-emerald-500 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-medium"
                           />
                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-[11px] font-extrabold text-slate-600 dark:text-slate-400 mb-1">পেশা (Profession)</label>
+                          <input
+                            type="text"
+                            value={editProfession}
+                            onChange={(e) => setEditProfession(e.target.value)}
+                            placeholder="যেমন: ছাত্র, ব্যবসায়ী"
+                            className="w-full px-3.5 py-3 text-xs rounded-2xl border border-pink-200/80 dark:border-slate-800 focus:outline-hidden focus:border-pink-600 dark:focus:border-emerald-500 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-medium"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-extrabold text-slate-600 dark:text-slate-400 mb-1">জন্ম তারিখ (DOB)</label>
+                          <input
+                            type="date"
+                            value={editDob}
+                            onChange={(e) => setEditDob(e.target.value)}
+                            className="w-full px-3.5 py-3 text-xs rounded-2xl border border-pink-200/80 dark:border-slate-800 focus:outline-hidden focus:border-pink-600 dark:focus:border-emerald-500 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-medium"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-slate-600 dark:text-slate-400 mb-1">রক্তের গ্রুপ (Blood Group)</label>
+                        <select
+                          value={editBloodGroup}
+                          onChange={(e) => setEditBloodGroup(e.target.value)}
+                          className="w-full px-3.5 py-3 text-xs rounded-2xl border border-pink-200/80 dark:border-slate-800 focus:outline-hidden focus:border-pink-600 dark:focus:border-emerald-500 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-medium"
+                        >
+                          <option value="">সিলেক্ট করুন</option>
+                          {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(group => (
+                            <option key={group} value={group}>{group}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
 
@@ -590,6 +571,36 @@ export const UserProfilePage: React.FC<UserProfilePageProps> = ({
                         </div>
                         <span className="text-xs font-black text-slate-900 dark:text-white truncate max-w-[200px]">
                           {user.address || 'কুষ্টিয়া, বাংলাদেশ'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-800/30 border border-pink-100 dark:border-slate-800 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors">
+                        <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400">
+                          <Droplet className="w-4 h-4 text-rose-600" />
+                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">রক্তের গ্রুপ:</span>
+                        </div>
+                        <span className="text-xs font-black text-slate-900 dark:text-white">
+                          {user.bloodGroup || 'যুক্ত করা হয়নি'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-800/30 border border-pink-100 dark:border-slate-800 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors">
+                        <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400">
+                          <User className="w-4 h-4 text-blue-600" />
+                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">পেশা:</span>
+                        </div>
+                        <span className="text-xs font-black text-slate-900 dark:text-white">
+                          {user.profession || 'যুক্ত করা হয়নি'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-800/30 border border-pink-100 dark:border-slate-800 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors">
+                        <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400">
+                          <Calendar className="w-4 h-4 text-indigo-600" />
+                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">জন্ম তারিখ:</span>
+                        </div>
+                        <span className="text-xs font-black text-slate-900 dark:text-white">
+                          {user.dob || 'যুক্ত করা হয়নি'}
                         </span>
                       </div>
                     </div>

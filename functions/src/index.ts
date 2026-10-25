@@ -203,7 +203,7 @@ export const onEmergencyBroadcastCreated = onDocumentCreated("emergency_broadcas
   }
 
   const alertData = snapshot.data();
-  const title = alertData.title || "🚨 জরুরি নোটিফিকেশন — কুষ্টিয়া কানেক্ট";
+  const title = alertData.title || "🚨 জরুরি নোটিফিকেশন — আমার কুষ্টিয়া";
   const body = alertData.body || "শহরের একটি নতুন জরুরি সতর্কতা প্রকাশিত হয়েছে।";
   const alertType = alertData.type || "emergency";
   const bloodGroup = alertData.bloodGroup;

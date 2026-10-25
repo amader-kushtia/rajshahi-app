@@ -12,7 +12,7 @@ export const CitizenCard: React.FC<CitizenCardProps> = ({
   onOpenEmergency,
 }) => {
   const { themeConfig } = useAdminConfig();
-  const appName = (themeConfig?.appName && themeConfig.appName !== 'সৈ-কানেক্ট' && themeConfig.appName !== 'আমার কুষ্টিয়া') ? themeConfig.appName : 'আমার কুষ্টিয়া';
+  const appName = 'আমার কুষ্টিয়া';
 
   return (
     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#064e3b] via-[#046a4e] to-[#022c22] text-white p-5 shadow-lg shadow-emerald-950/15 border border-emerald-600/30">

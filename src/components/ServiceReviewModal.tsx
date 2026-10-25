@@ -19,7 +19,9 @@ import {
   getReviewsForTarget, 
   getUserReview, 
   submitServiceReview, 
-  formatReviewerId 
+  formatReviewerId,
+  fetchReviewsForTarget,
+  subscribeToReviews
 } from '../services/reviewService';
 
 interface ServiceReviewModalProps {
@@ -49,30 +51,30 @@ export const ServiceReviewModal: React.FC<ServiceReviewModalProps> = ({
   const [existingUserReview, setExistingUserReview] = useState<ServiceReview | null>(null);
 
   useEffect(() => {
-    if (technician && isOpen) {
-      const targetReviews = getReviewsForTarget(technician.id);
-      setReviews(targetReviews);
+    if (!technician || !isOpen) return;
 
+    // Load initial reviews
+    fetchReviewsForTarget(technician.id).then(res => {
+      setReviews(res);
       if (user) {
-        const found = getUserReview(technician.id, user.uid);
+        const found = res.find(r => r.userId === user.uid);
         if (found) {
           setExistingUserReview(found);
           setSelectedRating(found.rating);
           setCommentText(found.comment || '');
-        } else {
-          setExistingUserReview(null);
-          setSelectedRating(5);
-          setCommentText('');
         }
-      } else {
-        setExistingUserReview(null);
-        setSelectedRating(5);
-        setCommentText('');
       }
+    });
 
-      setSuccessMessage(null);
-      setErrorMessage(null);
-    }
+    // Listen for updates
+    const unsub = subscribeToReviews((all) => {
+      const filtered = all.filter(r => r.targetId === technician.id);
+      if (filtered.length > 0) {
+        setReviews(filtered);
+      }
+    });
+
+    return () => unsub();
   }, [technician, isOpen, user]);
 
   if (!isOpen || !technician) return null;

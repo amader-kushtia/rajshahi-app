@@ -15,7 +15,7 @@ import {
   Wifi
 } from 'lucide-react';
 import { PostItem } from '../../types';
-import { getGrievanceReports } from '../../services/adminFeaturesService';
+import { getGrievances } from '../../services/adminFeaturesService';
 
 interface SystemHealthTabProps {
   posts: PostItem[];
@@ -82,7 +82,7 @@ export const SystemHealthTab: React.FC<SystemHealthTabProps> = ({ posts = [] }) 
   const approvedPosts = posts.filter(p => p.status === 'approved' || (p.status !== 'pending' && !p.id.startsWith('post-'))).length;
   const secretReports = posts.filter(p => p.category === 'crime-reporter');
   const pendingSecrets = secretReports.filter(p => p.status === 'pending').length;
-  const grievances = getGrievanceReports();
+  const grievances = getGrievances();
   const pendingGrievances = grievances.filter(g => g.status === 'pending').length;
 
   const totalPending = pendingPosts + pendingSecrets + pendingGrievances;

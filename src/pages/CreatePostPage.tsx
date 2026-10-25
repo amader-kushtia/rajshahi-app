@@ -124,6 +124,10 @@ export const CreatePostPage: React.FC<CreatePostPageProps> = ({
   const [jobType, setJobType] = useState('ফুল-টাইম');
   const [lostFoundType, setLostFoundType] = useState<'lost' | 'found'>('lost');
   const [companyName, setCompanyName] = useState('');
+  const [foodType, setFoodType] = useState('মিষ্টি ও ডেইরি');
+  const [cuisine, setCuisine] = useState('ঐতিহ্যবাহী বাঙালি');
+  const [deliveryAvailable, setDeliveryAvailable] = useState(true);
+
 
   // File Upload State
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -156,19 +160,23 @@ export const CreatePostPage: React.FC<CreatePostPageProps> = ({
     if (d.imagePreview) setImagePreview(d.imagePreview);
     if (d.id) setCurrentDraftId(d.id);
 
-    if (d.details) {
-      if (d.details.rooms) setRooms(d.details.rooms);
-      if (d.details.condition) setCondition(d.details.condition);
-      if (d.details.crimeCategory) setCrimeCategory(d.details.crimeCategory);
-      if (d.details.bloodGroup) setBloodGroup(d.details.bloodGroup);
-      if (d.details.hospitalName) setHospitalName(d.details.hospitalName);
-      if (d.details.experience) setExperience(d.details.experience);
-      if (d.details.driverLicense) setDriverLicense(d.details.driverLicense);
-      if (d.details.tutorSubject) setTutorSubject(d.details.tutorSubject);
-      if (d.details.jobType) setJobType(d.details.jobType);
-      if (d.details.companyName) setCompanyName(d.details.companyName);
-      if (d.details.lostFoundType) setLostFoundType(d.details.lostFoundType);
-    }
+      if (d.details) {
+        if (d.details.rooms) setRooms(d.details.rooms);
+        if (d.details.condition) setCondition(d.details.condition);
+        if (d.details.crimeCategory) setCrimeCategory(d.details.crimeCategory);
+        if (d.details.bloodGroup) setBloodGroup(d.details.bloodGroup);
+        if (d.details.hospitalName) setHospitalName(d.details.hospitalName);
+        if (d.details.experience) setExperience(d.details.experience);
+        if (d.details.driverLicense) setDriverLicense(d.details.driverLicense);
+        if (d.details.tutorSubject) setTutorSubject(d.details.tutorSubject);
+        if (d.details.jobType) setJobType(d.details.jobType);
+        if (d.details.companyName) setCompanyName(d.details.companyName);
+        if (d.details.lostFoundType) setLostFoundType(d.details.lostFoundType);
+        if (d.details.foodType) setFoodType(d.details.foodType);
+        if (d.details.cuisine) setCuisine(d.details.cuisine);
+        if (typeof d.details.deliveryAvailable === 'boolean') setDeliveryAvailable(d.details.deliveryAvailable);
+      }
+
   };
 
   useEffect(() => {
@@ -238,9 +246,13 @@ export const CreatePostPage: React.FC<CreatePostPageProps> = ({
             tutorSubject: category === 'tutor' ? tutorSubject : undefined,
             jobType: category === 'jobs' ? jobType : undefined,
             companyName: category === 'jobs' ? companyName : undefined,
-            lostFoundType: category === 'lost-found' ? lostFoundType : undefined
+            lostFoundType: category === 'lost-found' ? lostFoundType : undefined,
+            foodType: category === 'food' ? foodType : undefined,
+            cuisine: category === 'food' ? cuisine : undefined,
+            deliveryAvailable: category === 'food' ? deliveryAvailable : undefined
           }
         };
+
         autoSaveDraftProgress(payload);
         const d = new Date();
         const timeStr = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
@@ -281,9 +293,13 @@ export const CreatePostPage: React.FC<CreatePostPageProps> = ({
           tutorSubject: category === 'tutor' ? tutorSubject : undefined,
           jobType: category === 'jobs' ? jobType : undefined,
           companyName: category === 'jobs' ? companyName : undefined,
-          lostFoundType: category === 'lost-found' ? lostFoundType : undefined
+          lostFoundType: category === 'lost-found' ? lostFoundType : undefined,
+          foodType: category === 'food' ? foodType : undefined,
+          cuisine: category === 'food' ? cuisine : undefined,
+          deliveryAvailable: category === 'food' ? deliveryAvailable : undefined
         }
       });
+
       setCurrentDraftId(draftObj.id);
       setSuccessMessage('খসড়াটি লোকাল স্টোরেজে সফলভাবে সংরক্ষিত হয়েছে! কোনো পাবলিক পুশ নোটিফিকেশন তৈরি হয়নি। প্রোফাইলের "খসড়া" ট্যাবে এটি পাওয়া যাবে।');
       setTimeout(() => setSuccessMessage(''), 4500);
@@ -527,7 +543,7 @@ export const CreatePostPage: React.FC<CreatePostPageProps> = ({
         contactPhone: contactPhone.trim() || '',
         whatsapp: whatsapp.trim() || contactPhone.trim() || '',
         imageUrl: uploadedImageUrl,
-        authorName: isAdminOfficialPost ? (user?.displayName ? `${user.displayName} (অফিশিয়াল)` : 'কুষ্টিয়া কানেক্ট অফিশিয়াল') : finalAuthorName,
+        authorName: isAdminOfficialPost ? (user?.displayName ? `${user.displayName} (অফিশিয়াল)` : 'আমার কুষ্টিয়া অফিশিয়াল') : finalAuthorName,
         authorPhoto: finalAuthorPhoto,
         authorId: user?.uid || 'guest-citizen',
         authorEmail: user?.email || undefined,
@@ -548,9 +564,13 @@ export const CreatePostPage: React.FC<CreatePostPageProps> = ({
           tutorSubject: category === 'tutor' ? tutorSubject : undefined,
           jobType: category === 'jobs' ? jobType : undefined,
           companyName: category === 'jobs' ? companyName : undefined,
-          lostFoundType: category === 'lost-found' ? lostFoundType : undefined
+          lostFoundType: category === 'lost-found' ? lostFoundType : undefined,
+          foodType: category === 'food' ? foodType : undefined,
+          cuisine: category === 'food' ? cuisine : undefined,
+          deliveryAvailable: category === 'food' ? deliveryAvailable : undefined
         }
       };
+
 
       await createNewPost(newPostData);
       
@@ -1077,7 +1097,7 @@ export const CreatePostPage: React.FC<CreatePostPageProps> = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={
-                category === 'house-rent' ? 'যেমন: কুন্দল মোড়ে ৩ রুমের মনোরম ফ্যামিলি বাসা ভাড়া' :
+                category === 'house-rent' ? 'যেমন: মজমপুর গেটে ৩ রুমের মনোরম ফ্যামিলি বাসা ভাড়া' :
                 category === 'buy-sell' ? 'যেমন: Redmi Note 12 Pro (8GB/128GB) একদম ফ্রেশ কন্ডিশন' :
                 category === 'electrician' ? 'যেমন: অভিজ্ঞ ইলেকট্রিশিয়ান - হাউস ওয়্যারিং ও ফ্যান মেরামত' :
                 category === 'plumber' ? 'যেমন: জরুরি প্লাম্বার সেবা - পাইপলাইন লিকেজ ও স্যানিটারি ফিটিংস' :
@@ -1085,7 +1105,7 @@ export const CreatePostPage: React.FC<CreatePostPageProps> = ({
                 category === 'driver' ? 'যেমন: অভিজ্ঞ ও লাইসেন্সধারী প্রাইভেট কার ড্রাইভার প্রয়োজন / সেবা' :
                 category === 'tutor' ? 'যেমন: গণিত ও বিজ্ঞান বিষয়ে অভিজ্ঞ গৃহশিক্ষক / গৃহশিক্ষিকা আবশ্যক' :
                 category === 'vet' ? 'যেমন: ডেইরি ফার্ম ও পোষা প্রাণীর অভিজ্ঞ পশু চিকিৎসক ও সেবা' :
-                category === 'crime-reporter' ? 'যেমন: পুরনো রেলওয়ে ইয়ার্ডে মাদক ব্যবসার গোপন তথ্য' :
+                category === 'crime-reporter' ? 'যেমন: কুষ্টিয়া কোর্ট স্টেশন সংলগ্ন এলাকায় মাদক ব্যবসার গোপন তথ্য' :
                 'যেমন: জরুরী প্রয়োজনে A+ রক্তের আবেদন'
               }
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-pink-200/80 rounded-2xl text-xs text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-pink-700 focus:bg-white transition-all font-medium"
@@ -1285,18 +1305,47 @@ export const CreatePostPage: React.FC<CreatePostPageProps> = ({
                 <select
                   value={bloodGroup}
                   onChange={(e) => setBloodGroup(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-pink-200/80 rounded-2xl text-xs text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-pink-700 font-medium cursor-pointer"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-pink-200/80 text-xs font-bold"
                 >
                   {['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map(bg => (
                     <option key={bg} value={bg}>{bg}</option>
                   ))}
                 </select>
-                <p className="text-[11px] text-slate-500 font-medium leading-relaxed bg-pink-50/60 p-2 rounded-xl border border-pink-100/80">
-                  💡 <span className="font-bold text-slate-800">এই ঘরে কী নির্বাচন করবেন:</span> রোগীর জন্য যে গ্রুপের রক্ত প্রয়োজন সেটি সিলেক্ট করুন।
-                </p>
               </div>
             )}
+
+            {/* If Food: Specific Fields */}
+            {category === 'food' && (
+              <>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">খাবারের ধরণ</label>
+                  <select
+                    value={foodType}
+                    onChange={(e) => setFoodType(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-pink-200/80 text-xs font-bold"
+                  >
+                    <option value="মিষ্টি ও ডেইরি">মিষ্টি ও ডেইরি</option>
+                    <option value="বিরিয়ানি ও কাচ্চি">বিরিয়ানি ও কাচ্চি</option>
+                    <option value="ফাস্টফুড ও ড্রিঙ্কস">ফাস্টফুড ও ড্রিঙ্কস</option>
+                    <option value="দেশি ঘরোয়া খাবার">দেশি ঘরোয়া খাবার</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                    <span>ডেলিভারি সুবিধা?</span>
+                    <input 
+                      type="checkbox" 
+                      checked={deliveryAvailable} 
+                      onChange={(e) => setDeliveryAvailable(e.target.checked)}
+                      className="w-4 h-4 text-pink-700 border-pink-300 rounded-sm focus:ring-pink-500"
+                    />
+                  </label>
+                  <p className="text-[10px] text-slate-500">হোম ডেলিভারি দেওয়া হয় কি না টিক দিন</p>
+                </div>
+              </>
+            )}
           </div>
+
 
           {/* Price / Rent / Charge (If not crime reporter) */}
           {category !== 'crime-reporter' && (

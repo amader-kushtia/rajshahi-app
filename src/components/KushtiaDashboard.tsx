@@ -39,6 +39,8 @@ import { useThana } from '../context/ThanaContext';
 import { useLanguage } from '../context/LanguageContext';
 import { CategoryType, PostItem, UserProfile } from '../types';
 import { AlertTriangle, Heart } from 'lucide-react';
+import { LiveWeatherWidget } from './LiveWeatherWidget';
+import { SalatTimesWidget } from './SalatTimesWidget';
 
 interface KushtiaDashboardProps {
   onNavigate: (cat: CategoryType | string) => void;
@@ -300,6 +302,12 @@ export const KushtiaDashboard: React.FC<KushtiaDashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* Live Weather & AQI Widget */}
+      <LiveWeatherWidget />
+
+      {/* Salat Times Widget */}
+      <SalatTimesWidget />
 
       {/* 3. 12 MAIN SERVICES GRID */}
       <div className="px-3 sm:px-4 mb-5">

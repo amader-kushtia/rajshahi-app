@@ -3,17 +3,18 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-const DEFAULT_CENTER: [number, number] = [25.778522, 88.897377]; // Syedpur
+const DEFAULT_CENTER: [number, number] = [23.9015, 89.1205]; // Kushtia
 
 const DESTINATIONS = [
   { id: 'dhaka', label: 'ঢাকা (Dhaka)', location: [23.8103, 90.4125] as [number, number] },
-  { id: 'rangpur', label: 'রংপুর (Rangpur)', location: [25.7439, 89.2752] as [number, number] },
-  { id: 'dinajpur', label: 'দিনাজপুর (Dinajpur)', location: [25.6221, 88.6438] as [number, number] }
+  { id: 'khulna', label: 'খুলনা (Khulna)', location: [22.8456, 89.5403] as [number, number] },
+  { id: 'rajshahi', label: 'রাজশাহী (Rajshahi)', location: [24.3745, 88.6042] as [number, number] },
+  { id: 'jashore', label: 'যশোর (Jashore)', location: [23.1664, 89.2081] as [number, number] }
 ];
 
 const ALERT_ZONES = [
-  { id: 'alert-1', label: 'Highway Construction', location: [25.7600, 88.9200] as [number, number], type: 'construction', description: 'Road works on N5' },
-  { id: 'alert-2', label: 'Heavy Traffic', location: [25.7500, 88.9000] as [number, number], type: 'traffic', description: 'Congestion near bus stand' }
+  { id: 'alert-1', label: 'চৌড়হাস মোড় ট্রাফিক', location: [23.8820, 89.1100] as [number, number], type: 'traffic', description: 'কুষ্টিয়া-ঝিনাইদহ মহাসড়ক সংযোগস্থল' },
+  { id: 'alert-2', label: 'মজমপুর বাসস্ট্যান্ড', location: [23.9050, 89.1250] as [number, number], type: 'traffic', description: 'কেন্দ্রীয় বাস টার্মিনাল ও কোর্ট স্টেশন সংলগ্ন' }
 ];
 
 // Custom Leaflet Icons
@@ -24,7 +25,7 @@ const createCustomIcon = (html: string) => L.divIcon({
   iconAnchor: [12, 12]
 });
 
-const syedpurIcon = createCustomIcon(`<div class="w-5 h-5 bg-emerald-600 border-2 border-white rounded-full shadow-lg"></div>`);
+const kushtiaIcon = createCustomIcon(`<div class="w-5 h-5 bg-emerald-600 border-2 border-white rounded-full shadow-lg"></div>`);
 const alertIcon = createCustomIcon(`<div class="w-6 h-6 flex items-center justify-center bg-red-100 border-2 border-red-500 text-red-600 rounded-full shadow-md text-xs font-bold animate-pulse">!</div>`);
 
 const getDestIcon = (label: string) => L.divIcon({
@@ -78,8 +79,8 @@ export const TransportMapView: React.FC = () => {
           />
           
           {/* Origin */}
-          <Marker position={DEFAULT_CENTER} icon={syedpurIcon}>
-            <Popup className="font-bold">সৈয়দপুর (Syedpur)</Popup>
+          <Marker position={DEFAULT_CENTER} icon={kushtiaIcon}>
+            <Popup className="font-bold">কুষ্টিয়া (Kushtia)</Popup>
           </Marker>
 
           {/* Destinations & Routes */}

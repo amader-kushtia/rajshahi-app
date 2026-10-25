@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { collection, getCountFromServer, doc, onSnapshot } from 'firebase/firestore';
+import { collection, getCountFromServer, doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { postService } from '../services/postService';
 import { 
@@ -12,6 +12,7 @@ import {
 import { 
   getAppThemeConfig, 
   saveAppThemeConfig, 
+  sanitizeAppThemeConfig,
   THEME_PRESETS, 
   DEFAULT_APP_THEME,
   ADMIN_CONFIG_KEY,
@@ -84,10 +85,7 @@ const AdminConfigContext = createContext<AdminConfigContextType | undefined>(und
 export const AdminConfigProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [themeConfig, setThemeConfig] = useState<AppThemeConfig>(() => {
     const initial = getAppThemeConfig();
-    if (!initial.appName || initial.appName === 'আমার কুষ্টিয়া' || initial.appName === 'কুষ্টিয়া জেলা' || initial.appName === 'আমার কুষ্টিয়া') {
-      return { ...initial, appName: '(আমার কুষ্টিয়া)' };
-    }
-    return initial;
+    return sanitizeAppThemeConfig(initial);
   });
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
     try {
@@ -140,22 +138,32 @@ export const AdminConfigProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const unsub = onSnapshot(doc(db, 'admin_config', 'global'), (snap) => {
       if (snap.exists()) {
         const remoteData = snap.data() as Partial<AppThemeConfig>;
-        if (!remoteData.appName || remoteData.appName === 'আমার কুষ্টিয়া' || remoteData.appName === 'কুষ্টিয়া জেলা') {
-          remoteData.appName = 'আমার কুষ্টিয়া';
+        const rawString = JSON.stringify(remoteData);
+        const hasSaidpurOrConnect = rawString.includes('সৈয়দ') || 
+                                    rawString.includes('সৈয়দ') || 
+                                    rawString.includes('কানেক্ট') || 
+                                    /saidpur|syedpur|নীলফামারী/i.test(rawString) ||
+                                    remoteData.appName !== 'আমার কুষ্টিয়া';
+
+        const sanitized = sanitizeAppThemeConfig(remoteData);
+        sanitized.appName = 'আমার কুষ্টিয়া';
+
+        // Auto-heal Firestore if old Syedpur/Nilphamari or Connect data was stored
+        if (hasSaidpurOrConnect) {
+          setDoc(doc(db, 'admin_config', 'global'), sanitized, { merge: true })
+            .catch(err => console.warn('Auto-healing Firestore config note:', err));
         }
-        setThemeConfig(prev => {
-          const merged = { ...prev, ...remoteData };
-          try {
-            localStorage.setItem(ADMIN_CONFIG_KEY, JSON.stringify(merged));
-          } catch (e) {
-            console.warn('Error saving remote config to localStorage:', e);
-          }
-          return merged;
-        });
+
+        setThemeConfig(sanitized);
+        try {
+          localStorage.setItem(ADMIN_CONFIG_KEY, JSON.stringify(sanitized));
+        } catch (e) {
+          console.warn('Error saving remote config to localStorage:', e);
+        }
 
         // Notify other components of the remote update
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('kushtia-app-config-updated', { detail: remoteData }));
+          window.dispatchEvent(new CustomEvent('kushtia-app-config-updated', { detail: sanitized }));
         }
       }
     }, (err) => {

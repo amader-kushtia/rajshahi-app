@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   Search, 
@@ -13,7 +13,8 @@ import {
   Building, 
   AlertCircle
 } from 'lucide-react';
-import { DOCTORS_LIST, BLOOD_DONORS } from '../data/initialData';
+import { getDoctors, getBloodDonors, subscribeToDoctors, subscribeToBloodDonors } from '../services/adminFeaturesService';
+import { Doctor, BloodDonor } from '../types';
 
 interface DoctorsPageProps {
   initialTab?: 'doctors' | 'blood';
@@ -28,11 +29,27 @@ export const DoctorsPage: React.FC<DoctorsPageProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpeciality, setSelectedSpeciality] = useState('সব বিশেষজ্ঞ');
   const [selectedBloodGroup, setSelectedBloodGroup] = useState('সব রক্ত গ্রুপ');
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [donors, setDonors] = useState<BloodDonor[]>([]);
+
+  useEffect(() => {
+    const unsubDocs = subscribeToDoctors((data) => setDoctors(data));
+    const unsubDonors = subscribeToBloodDonors((data) => setDonors(data));
+    
+    // Initial sync fetch
+    setDoctors(getDoctors());
+    setDonors(getBloodDonors());
+
+    return () => {
+      unsubDocs();
+      unsubDonors();
+    };
+  }, []);
 
   const specialities = ['সব বিশেষজ্ঞ', 'মেডিসিন', 'গাইনী', 'শিশু রোগ', 'অর্থোপেডিক'];
   const bloodGroups = ['সব রক্ত গ্রুপ', 'A+', 'B+', 'O+', 'AB+', 'A-', 'B-', 'O-', 'AB-'];
 
-  const filteredDoctors = DOCTORS_LIST.filter(doc => {
+  const filteredDoctors = doctors.filter(doc => {
     const matchesSearch = 
       doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.speciality.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -45,7 +62,7 @@ export const DoctorsPage: React.FC<DoctorsPageProps> = ({
     return matchesSearch && matchesSpec;
   });
 
-  const filteredDonors = BLOOD_DONORS.filter(donor => {
+  const filteredDonors = donors.filter(donor => {
     const matchesSearch = 
       donor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       donor.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -92,9 +109,9 @@ export const DoctorsPage: React.FC<DoctorsPageProps> = ({
             }`}
           >
             <Stethoscope className="w-4 h-4 text-emerald-600" />
-            <span>বিশেষজ্ঞ ডাক্তার ({DOCTORS_LIST.length})</span>
+            <span>বিশেষজ্ঞ ডাক্তার ({doctors.length})</span>
           </button>
-
+ 
           <button
             onClick={() => setActiveTab('blood')}
             className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
@@ -104,7 +121,7 @@ export const DoctorsPage: React.FC<DoctorsPageProps> = ({
             }`}
           >
             <Droplet className="w-4 h-4 text-rose-600" />
-            <span>জরুরি রক্তদাতা ({BLOOD_DONORS.length})</span>
+            <span>জরুরি রক্তদাতা ({donors.length})</span>
           </button>
         </div>
 

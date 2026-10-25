@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   Search, 
@@ -13,11 +13,11 @@ import {
   Clock, 
   AlertTriangle,
   Building2,
-  Users,
   Shield
 } from 'lucide-react';
-import { EMERGENCY_HELPLINES } from '../data/initialData';
+import { getManagedHelplines, subscribeToHelplines } from '../services/adminFeaturesService';
 import { getAppThemeConfig } from '../services/adminService';
+import { EmergencyHelpline } from '../types';
 
 interface EmergencyPageProps {
   onBack: () => void;
@@ -171,14 +171,19 @@ export const EmergencyPage: React.FC<EmergencyPageProps> = ({ onBack }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'police' | 'hospital' | 'admin'>('all');
   const [appConfig, setAppConfig] = useState(() => getAppThemeConfig());
+  const [helplines, setHelplines] = useState<EmergencyHelpline[]>([]);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    const unsubHelplines = subscribeToHelplines((data) => setHelplines(data));
+    getManagedHelplines().then(setHelplines);
+    
     const handleConfigUpdate = () => {
       setAppConfig(getAppThemeConfig());
     };
     window.addEventListener('kushtia-app-config-updated', handleConfigUpdate);
     window.addEventListener('storage', handleConfigUpdate);
     return () => {
+      unsubHelplines();
       window.removeEventListener('kushtia-app-config-updated', handleConfigUpdate);
       window.removeEventListener('storage', handleConfigUpdate);
     };
@@ -190,7 +195,7 @@ export const EmergencyPage: React.FC<EmergencyPageProps> = ({ onBack }) => {
   const ambulanceNum = appConfig?.emergencyContacts?.ambulance || appConfig?.ambulancePhone;
   const electricityNum = appConfig?.emergencyContacts?.electricity || appConfig?.electricityPhone;
 
-  const activeHelplines = EMERGENCY_HELPLINES.map(item => {
+  const activeHelplines = helplines.map(item => {
     if (item.id === 'em-2' && policeNum) {
       return { ...item, number: policeNum };
     }
@@ -342,7 +347,7 @@ export const EmergencyPage: React.FC<EmergencyPageProps> = ({ onBack }) => {
         ))}
       </div>
 
-      {/* SECTION 2: Essential Numbers (Specific Kushtia Police, Hospitals, Admin) */}
+      {/* SECTION 2: Essential Numbers */}
       <div className="space-y-3 pt-4 border-t border-pink-200/80">
         <div className="flex items-center justify-between px-1">
           <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">

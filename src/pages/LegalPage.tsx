@@ -28,7 +28,7 @@ const INITIAL_LEGAL_SERVICES: PostItem[] = [
     id: 'legal-1',
     category: 'legal',
     title: 'অ্যাডভোকেট এ. কে. এম. শহিদুল ইসলাম (সিনিয়র আইনজীবী)',
-    description: 'নীলফামারী জেলা ও দায়রা জজ আদালত এবং কুষ্টিয়া চেম্বার। জমি-জমা সংক্রান্ত জটিল দেওয়ানি মামলা, খতিয়ান সংশোধন, বণ্টন ও সিভিল আপিলে ২০+ বছরের অভিজ্ঞতা।',
+    description: 'কুষ্টিয়া জেলা ও দায়রা জজ আদালত এবং নিজস্ব চেম্বার। জমি-জমা সংক্রান্ত জটিল দেওয়ানি মামলা, খতিয়ান সংশোধন, বণ্টন ও সিভিল আপিলে ২০+ বছরের অভিজ্ঞতা।',
     location: 'চেম্বার: কোর্ট রোড সংলগ্ন, কুষ্টিয়া',
     subcategory: 'দেওয়ানি ও জমি-জমা',
     contactPhone: '01711332211',
@@ -38,7 +38,7 @@ const INITIAL_LEGAL_SERVICES: PostItem[] = [
     isVerified: true,
     featured: true,
     details: {
-      lawyerCourt: 'নীলফামারী জজকোর্ট ও কুষ্টিয়া',
+      lawyerCourt: 'কুষ্টিয়া জেলা জজকোর্ট ও চেম্বার',
       lawyerSpeciality: 'দেওয়ানি, খতিয়ান ও জমি বিরোধ',
       experienceYears: '২২ বছর',
       chamberTime: 'বিকেল ৫:০০ - রাত ৯:০০ (শনি-বৃহস্পতি)'
@@ -57,7 +57,7 @@ const INITIAL_LEGAL_SERVICES: PostItem[] = [
     createdAt: Date.now() - 1000 * 60 * 60 * 24,
     isVerified: true,
     details: {
-      lawyerCourt: 'নীলফামারী ও কুষ্টিয়া চৌকি আদালত',
+      lawyerCourt: 'কুষ্টিয়া জেলা ও দায়রা আদালত',
       lawyerSpeciality: 'পারিবারিক ও অভিভাবকত্ব আইন',
       experienceYears: '১২ বছর',
       chamberTime: 'বিকেল ৫:৩০ - রাত ৮:৩০'

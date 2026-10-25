@@ -18,7 +18,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { TransportSchedule } from '../../types';
-import { getManagedTransport, saveTransport, deleteTransport } from '../../services/adminFeaturesService';
+import { getManagedTransport, saveTransport, deleteTransport, subscribeToTransport } from '../../services/adminFeaturesService';
 
 export const TransportManagementTab: React.FC = () => {
   const [transports, setTransports] = useState<TransportSchedule[]>([]);
@@ -42,17 +42,32 @@ export const TransportManagementTab: React.FC = () => {
   const [fareAmount, setFareAmount] = useState('৫০০ ৳');
   const [fareList, setFareList] = useState<{ class: string; fare: string }[]>([]);
 
+  const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  const refreshData = () => {
-    setTransports(getManagedTransport());
+  const refreshData = async () => {
+    const data = await getManagedTransport();
+    setTransports(data);
   };
 
   useEffect(() => {
     refreshData();
-    const handleUpdate = () => refreshData();
-    window.addEventListener('kushtia-transport-updated', handleUpdate);
-    return () => window.removeEventListener('kushtia-transport-updated', handleUpdate);
+    // Real-time subscription
+    const unsub = subscribeToTransport((data) => {
+      setTransports(data);
+    });
+
+    const handleEvent = (e: any) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        setTransports(e.detail);
+      }
+    };
+    window.addEventListener('kushtia-transport-updated', handleEvent);
+
+    return () => {
+      unsub();
+      window.removeEventListener('kushtia-transport-updated', handleEvent);
+    };
   }, []);
 
   const openModal = (item?: TransportSchedule) => {
@@ -66,7 +81,13 @@ export const TransportManagementTab: React.FC = () => {
       setTransArrival(item.arrivalTime);
       setTransOffDay(item.offDay);
       setTransPhone(item.bookingPhone || '');
-      setFareList(item.fareList || []);
+      setFareList(
+        item.fareList && item.fareList.length > 0 
+          ? JSON.parse(JSON.stringify(item.fareList)) 
+          : [{ class: 'সাধারণ', fare: '৫০০ ৳' }]
+      );
+      setFareClassName('');
+      setFareAmount('');
     } else {
       setEditingTransport(null);
       setTransType('বাস');
@@ -78,43 +99,100 @@ export const TransportManagementTab: React.FC = () => {
       setTransOffDay('নেই');
       setTransPhone('01712000000');
       setFareList([
-        { class: 'নন-এসি', fare: '৮০০ ৳' },
+        { class: 'সাধারণ', fare: '৫০০ ৳' },
         { class: 'এসি', fare: '১২০০ ৳' }
       ]);
+      setFareClassName('');
+      setFareAmount('');
     }
     setIsModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const updateFareItemClass = (idx: number, newClass: string) => {
+    setFareList(prev => prev.map((item, i) => i === idx ? { ...item, class: newClass } : item));
+  };
+
+  const updateFareItemAmount = (idx: number, newFare: string) => {
+    setFareList(prev => prev.map((item, i) => i === idx ? { ...item, fare: newFare } : item));
+  };
+
+  const addNewEmptyFareRow = () => {
+    setFareList(prev => [...prev, { class: 'নতুন শ্রেণি', fare: '৫০০ ৳' }]);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!transName.trim() || !transRoute.trim()) {
       alert('দয়া করে পরিববহনের নাম ও রুট পূরণ করুন।');
       return;
     }
 
-    saveTransport({
-      id: editingTransport ? editingTransport.id : undefined,
-      type: transType,
-      name: transName,
-      code: transCode,
-      route: transRoute,
-      departureTime: transDeparture,
-      arrivalTime: transArrival,
-      offDay: transOffDay,
-      bookingPhone: transPhone,
-      fareList: fareList.length > 0 ? fareList : [{ class: 'সাধারণ', fare: '৫০০ ৳' }]
-    });
+    setIsSaving(true);
+    try {
+      let finalFares = fareList.filter(f => f.class.trim() || f.fare.trim()).map(f => ({
+        class: f.class.trim() || 'সাধারণ',
+        fare: f.fare.trim() ? (f.fare.includes('৳') ? f.fare.trim() : `${f.fare.trim()} ৳`) : '৫০০ ৳'
+      }));
 
-    setIsModalOpen(false);
-    setFeedback('যাতায়াত শিডিউল সফলভাবে সংরক্ষণ করা হয়েছে!');
-    setTimeout(() => setFeedback(null), 4000);
+      if (fareAmount.trim()) {
+        const cls = fareClassName.trim() || 'সাধারণ';
+        const formattedFare = fareAmount.includes('৳') ? fareAmount.trim() : `${fareAmount.trim()} ৳`;
+        const exists = finalFares.findIndex(f => f.class.toLowerCase() === cls.toLowerCase());
+        if (exists >= 0) {
+          finalFares[exists].fare = formattedFare;
+        } else {
+          finalFares.push({ class: cls, fare: formattedFare });
+        }
+      }
+
+      if (finalFares.length === 0) {
+        finalFares = [{ class: 'সাধারণ', fare: '৫০০ ৳' }];
+      }
+
+      const payload: Partial<TransportSchedule> = {
+        id: editingTransport ? editingTransport.id : undefined,
+        type: transType,
+        name: transName.trim(),
+        code: transCode.trim(),
+        route: transRoute.trim(),
+        departureTime: transDeparture.trim(),
+        arrivalTime: transArrival.trim(),
+        offDay: transOffDay.trim(),
+        bookingPhone: transPhone.trim(),
+        fareList: finalFares
+      };
+
+      const updated = await saveTransport(payload);
+      setTransports(prev => {
+        const idx = prev.findIndex(t => t.id === updated.id);
+        if (idx >= 0) {
+          return [...prev.slice(0, idx), updated, ...prev.slice(idx + 1)];
+        }
+        return [updated, ...prev];
+      });
+
+      setIsModalOpen(false);
+      setFeedback('যাতায়াত শিডিউল ও ভাড়া সফলভাবে সংরক্ষণ করা হয়েছে!');
+      setTimeout(() => setFeedback(null), 4000);
+    } catch (err) {
+      console.error('Error saving transport:', err);
+      alert('সংরক্ষণ করতে সমস্যা হয়েছে।');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDelete = (id: string, name: string) => {
-    if (window.confirm(`আপনি কি নিশ্চিতভাবে "${name}" শিডিউলটি ডিলিট করতে চান?`)) {
-      deleteTransport(id);
-      setFeedback('শিডিউল সফলভাবে ডিলিট করা হয়েছে।');
-      setTimeout(() => setFeedback(null), 4000);
+  const handleDelete = async (id: string, name: string) => {
+    if (confirm(`আপনি কি নিশ্চিতভাবে "${name}" শিডিউলটি ডিলিট করতে চান?`)) {
+      try {
+        await deleteTransport(id);
+        setTransports(prev => prev.filter(t => t.id !== id));
+        setFeedback('শিডিউল সফলভাবে ডিলিট করা হয়েছে।');
+        setTimeout(() => setFeedback(null), 4000);
+      } catch (err) {
+        console.error('Error deleting transport:', err);
+        alert('ডিলিট করতে সমস্যা হয়েছে।');
+      }
     }
   };
 
@@ -331,7 +409,7 @@ export const TransportManagementTab: React.FC = () => {
                     required
                     value={transName}
                     onChange={(e) => setTransName(e.target.value)}
-                    placeholder="যেমন: নীলসাগর এক্সপ্রেস"
+                    placeholder="যেমন: সুন্দরবন এক্সপ্রেস"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-pink-200/80 dark:border-slate-700 text-xs font-bold dark:text-white"
                   />
                 </div>
@@ -341,7 +419,7 @@ export const TransportManagementTab: React.FC = () => {
                     type="text"
                     value={transCode}
                     onChange={(e) => setTransCode(e.target.value)}
-                    placeholder="যেমন: ৭৬৫/৭৬৬"
+                    placeholder="যেমন: ৭২৫/৭২৬"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-pink-200/80 dark:border-slate-700 text-xs font-bold dark:text-white"
                   />
                 </div>
@@ -354,7 +432,7 @@ export const TransportManagementTab: React.FC = () => {
                   required
                   value={transRoute}
                   onChange={(e) => setTransRoute(e.target.value)}
-                  placeholder="যেমন: চিলাহাটি ⇄ কুষ্টিয়া ⇄ ঢাকা"
+                  placeholder="যেমন: খুলনা ⇄ কুষ্টিয়া (পোড়াদহ) ⇄ ঢাকা"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-pink-200/80 dark:border-slate-700 text-xs font-bold dark:text-white"
                 />
               </div>
@@ -406,44 +484,58 @@ export const TransportManagementTab: React.FC = () => {
                 </div>
               </div>
 
-              {/* Fare List Builder */}
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">ভাড়া তালিকা যোগ করুন</label>
-                <div className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={fareClassName}
-                    onChange={(e) => setFareClassName(e.target.value)}
-                    placeholder="ক্লাস (যেমন: শোভন চেয়ার)"
-                    className="flex-1 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-pink-200/80 dark:border-slate-700 text-xs font-bold dark:text-white"
-                  />
-                  <input
-                    type="text"
-                    value={fareAmount}
-                    onChange={(e) => setFareAmount(e.target.value)}
-                    placeholder="ভাড়া (যেমন: ৫৫০ ৳)"
-                    className="w-28 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-pink-200/80 dark:border-slate-700 text-xs font-bold dark:text-white"
-                  />
+              {/* Fare List - Directly Editable Rows */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      ভাড়া তালিকা (শ্রেণি ও টাকার পরিমাণ সরাসরি এডিট করুন)
+                    </label>
+                    <p className="text-[10px] text-slate-500">বক্সে সরাসরি ক্লিক করে টাকার পরিমাণ বা শ্রেণি পরিবর্তন করতে পারেন</p>
+                  </div>
                   <button
                     type="button"
-                    onClick={addFareItem}
-                    className="px-3.5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-black shrink-0 hover:bg-emerald-700"
+                    onClick={addNewEmptyFareRow}
+                    className="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800 transition-colors"
                   >
-                    যোগ
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ শ্রেণি যোগ করুন</span>
                   </button>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {fareList.map((f, i) => (
-                    <div key={i} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl text-xs font-semibold">
-                      <span>{f.class}: <strong className="text-emerald-700">{f.fare}</strong></span>
-                      <button
-                        type="button"
-                        onClick={() => removeFareItem(i)}
-                        className="text-rose-500 hover:text-rose-700 text-[10px] font-bold"
-                      >
-                        রিমুভ
-                      </button>
+                    <div key={i} className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-pink-200/80 dark:border-slate-700">
+                      <div className="flex-1">
+                        <label className="text-[10px] font-bold text-slate-500 block mb-0.5">শ্রেণি / সিটের ধরণ</label>
+                        <input
+                          type="text"
+                          value={f.class}
+                          onChange={(e) => updateFareItemClass(i, e.target.value)}
+                          placeholder="যেমন: সাধারণ / শোভন চেয়ার"
+                          className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-pink-200/80 dark:border-slate-700 text-xs font-bold dark:text-white"
+                        />
+                      </div>
+                      <div className="w-32 sm:w-36">
+                        <label className="text-[10px] font-bold text-slate-500 block mb-0.5">ভাড়া (টাকা)</label>
+                        <input
+                          type="text"
+                          value={f.fare}
+                          onChange={(e) => updateFareItemAmount(i, e.target.value)}
+                          placeholder="যেমন: ৬০০ ৳"
+                          className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 text-xs font-black text-emerald-700 dark:text-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        />
+                      </div>
+                      {fareList.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeFareItem(i)}
+                          className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors mt-3 shrink-0"
+                          title="এই শ্রেণিটি বাদ দিন"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -459,10 +551,11 @@ export const TransportManagementTab: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-lg shadow-emerald-600/20 flex items-center gap-1.5"
+                  disabled={isSaving}
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-lg shadow-emerald-600/20 flex items-center gap-1.5 disabled:opacity-50"
                 >
                   <Save className="w-4 h-4" />
-                  <span>সংরক্ষণ করুন</span>
+                  <span>{isSaving ? 'সেভ হচ্ছে...' : 'সংরক্ষণ করুন'}</span>
                 </button>
               </div>
             </form>

@@ -89,7 +89,7 @@ export const SecretReportsTab: React.FC<SecretReportsTabProps> = ({
   };
 
   const handleCopyReportForPolice = (post: PostItem) => {
-    const reportText = `🚨 [সৈয়দপুর কানেক্ট - গোপন ক্রাইম ও তথ্য রিপোর্ট] 🚨
+    const reportText = `🚨 [আমার কুষ্টিয়া - গোপন ক্রাইম ও তথ্য রিপোর্ট] 🚨
 ----------------------------------------
 📌 অপরাধের ধরন: ${post.details?.crimeCategory || post.subcategory || 'গোপন তথ্য'}
 📍 ঘটনাস্থল: ${post.location}
@@ -102,7 +102,7 @@ ${post.description}
 
 ${post.imageUrl ? `📷 প্রমাণের ছবি লিঙ্ক: ${post.imageUrl}` : ''}
 ----------------------------------------
-নোট: এই তথ্যটি সৈয়দপুর কানেক্ট অ্যাপের গোপন ডেস্কে জমা হয়েছে।`;
+নোট: এই তথ্যটি আমার কুষ্টিয়া অ্যাপের গোপন ডেস্কে জমা হয়েছে।`;
 
     navigator.clipboard.writeText(reportText);
     showToast('পুলিশের কাছে পাঠানোর জন্য সম্পূর্ণ তথ্যটি ক্লিপবোর্ডে কপি করা হয়েছে!');
@@ -124,7 +124,7 @@ ${post.imageUrl ? `📷 প্রমাণের ছবি লিঙ্ক: ${po
           </style>
         </head>
         <body>
-          <h1>সৈয়দপুর কানেক্ট - গোপন ক্রাইম রিপোর্ট</h1>
+          <h1>আমার কুষ্টিয়া - গোপন ক্রাইম রিপোর্ট</h1>
           <div class="meta">
             <p><strong>শিরোনাম:</strong> ${post.title}</p>
             <p><strong>অপরাধের ধরন:</strong> ${post.details?.crimeCategory || post.subcategory || 'অনির্দিষ্ট'}</p>
@@ -136,7 +136,7 @@ ${post.imageUrl ? `📷 প্রমাণের ছবি লিঙ্ক: ${po
           <h3>পূর্ণাঙ্গ বিবরণ:</h3>
           <div class="desc">${post.description}</div>
           ${post.imageUrl ? `<p><strong>ছবি সংযুক্ত রয়েছে:</strong> <br><img src="${post.imageUrl}" style="max-width: 400px; margin-top: 15px; border-radius: 8px;" /></p>` : ''}
-          <div class="footer">সৈয়দপুর পৌরসভা ও স্থানীয় আইনশৃঙ্খলা বাহিনীর সমন্বয়ে সংরক্ষিত।</div>
+          <div class="footer">কুষ্টিয়া পৌরসভা ও স্থানীয় আইনশৃঙ্খলা বাহিনীর সমন্বয়ে সংরক্ষিত।</div>
         </body>
       </html>
     `);
@@ -212,12 +212,12 @@ ${post.imageUrl ? `📷 প্রমাণের ছবি লিঙ্ক: ${po
           {/* Emergency Helplines Fast Action */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
             <a 
-              href="tel:01320136294"
+              href="tel:01320146300"
               className="px-3.5 py-2 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-xs font-black flex items-center gap-1.5 transition-all shadow-md shadow-red-900/40"
-              title="সরাসরি কুষ্টিয়া থানার ওসির সরকারি মোবাইল নম্বর"
+              title="সরাসরি কুষ্টিয়া মডেল থানার ওসির সরকারি মোবাইল নম্বর"
             >
               <Phone className="w-4 h-4" />
-              <span>ওসি সৈয়দপুর থানা (০১৩২০-১৩৬২৯৪)</span>
+              <span>ওসি কুষ্টিয়া মডেল থানা (০১৩২০-১৪৬৩০০)</span>
             </a>
             <a 
               href="tel:999"

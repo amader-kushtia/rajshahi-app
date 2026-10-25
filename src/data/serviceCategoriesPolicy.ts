@@ -335,17 +335,7 @@ export const SERVICE_POSTING_POLICIES: Record<string, ServicePostingPolicy> = {
     badge: 'সিএনজি ও অটো স্ট্যান্ড',
     subcategories: ['শহর ও উপজেলা রুট', 'রিজার্ভ সিএনজি', 'অটো রিকশা ও ইজিবাইক', 'ভাড়া তালিকা ও স্ট্যান্ড']
   },
-  'residential-hotel': {
-    id: 'residential-hotel',
-    label: 'আবাসিক হোটেল সেবা',
-    englishLabel: 'Residential Hotel Service',
-    icon: Building,
-    allowPublicPost: true,
-    group: 'transport',
-    groupLabel: 'হোটেল ও থাকার জায়গা',
-    badge: 'আবাসন ও গেস্টহাউস',
-    subcategories: ['এসি রুম ও ভিআইপি স্যুট', 'নন-এসি বাজেট রুম', 'ফ্যামিলি হোটেল ও গেস্টহাউস', 'বুকিং ও যোগাযোগ']
-  },
+
   'fitness': {
     id: 'fitness',
     label: 'জিম ও ফিটনেস সেন্টার',

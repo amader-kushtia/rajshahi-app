@@ -200,7 +200,7 @@ export const SponsoredManagementTab: React.FC<SponsoredManagementTabProps> = ({ 
       discountBadge: 'বিশেষ ক্যাশব্যাক অফার',
       couponCode: 'KUSHTIANEW',
       validTill: '৩১ ডিসেম্বর ২০২৬ পর্যন্ত প্রযোজ্য',
-      location: 'কুষ্টিয়া বাজার রোড, নীলফামারী',
+      location: 'এনএস রোড, কুষ্টিয়া সদর, কুষ্টিয়া',
       phone: '01712000000',
       whatsapp: '8801712000000',
       email: '',

@@ -77,7 +77,8 @@ export const VolunteerJoinPopup: React.FC<VolunteerJoinPopupProps> = ({ onNaviga
                 স্বেচ্ছাসেবী হিসেবে যোগ দিন!
               </h3>
               <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-2 leading-relaxed px-2">
-                {themeConfig.volunteerPopupMessage || 'কুষ্টিয়া শহরের সেবায় আপনি কি সেচ্ছাসেবী হিসেবে আমাদের সঙ্গে কাজ করতে চান? আপনার সামান্য সহযোগিতা অনেকের উপকারে আসতে পারে।'}
+                {(themeConfig.volunteerPopupMessage || 'কুষ্টিয়া শহরের সেবায় আপনি কি সেচ্ছাসেবী হিসেবে আমাদের সঙ্গে কাজ করতে চান? আপনার সামান্য সহযোগিতা অনেকের উপকারে আসতে পারে।')
+                  .replace(/সৈয়দপুর|সৈয়দপুর|Syedpur|Saidpur/gi, 'কুষ্টিয়া')}
               </p>
 
               <div className="mt-6">

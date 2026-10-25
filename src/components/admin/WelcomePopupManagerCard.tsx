@@ -37,7 +37,7 @@ const SAVED_POPUPS_KEY = 'kushtia_saved_welcome_popups_v2';
 const INITIAL_POPUPS: SavedWelcomePopup[] = [
   {
     id: 'popup-default-1',
-    title: 'আমার কুষ্টিয়াে আপনাকে স্বাগতম!',
+    title: 'আমার কুষ্টিয়ায় আপনাকে স্বাগতম!',
     badge: 'স্বাগতম বার্তা',
     message: 'কুষ্টিয়া শহরের সব প্রয়োজনীয় জরুরি সেবা, ডাক্তার ডিরেক্টরি, রক্তের ডাক, ট্রেনের সময়সূচি এবং স্থানীয় কেনাবেচা ও বাসা ভাড়ার তথ্য এখন আপনার হাতের মুঠোয়।',
     buttonText: 'শুরু করুন',
@@ -96,8 +96,15 @@ export const WelcomePopupManagerCard: React.FC<WelcomePopupManagerCardProps> = (
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isActive, setIsActive] = useState<boolean>(appTheme?.isWelcomePopupActive ?? true);
-  const [title, setTitle] = useState<string>(appTheme?.welcomePopupTitle || 'আমার কুষ্টিয়াে আপনাকে স্বাগতম!');
-  const [message, setMessage] = useState<string>(appTheme?.welcomePopupMessage || 'কুষ্টিয়া শহরের সব প্রয়োজনীয় জরুরি সেবা, ডাক্তার ডিরেক্টরি, রক্তের ডাক, ট্রেনের সময়সূচি এবং স্থানীয় কেনাবেচা ও বাসা ভাড়ার তথ্য এখন আপনার হাতের মুঠোয়।');
+  const [title, setTitle] = useState<string>(() => {
+    const raw = appTheme?.welcomePopupTitle || 'আমার কুষ্টিয়ায় আপনাকে স্বাগতম!';
+    if (raw.includes('কানেক্টে') || raw.includes('কুষ্টিয়া কানেক্ট')) return 'আমার কুষ্টিয়ায় আপনাকে স্বাগতম!';
+    return raw.replace(/সৈয়দপুর|সৈয়দপুর|Syedpur|Saidpur/gi, 'কুষ্টিয়া').replace(/আমার কুষ্টিয়াে/g, 'আমার কুষ্টিয়ায়');
+  });
+  const [message, setMessage] = useState<string>(() => {
+    const raw = appTheme?.welcomePopupMessage || 'কুষ্টিয়া শহরের সব প্রয়োজনীয় জরুরি সেবা, ডাক্তার ডিরেক্টরি, রক্তের ডাক, ট্রেনের সময়সূচি এবং স্থানীয় কেনাবেচা ও বাসা ভাড়ার তথ্য এখন আপনার হাতের মুঠোয়।';
+    return raw.replace(/সৈয়দপুর|সৈয়দপুর|Syedpur|Saidpur/gi, 'কুষ্টিয়া');
+  });
   const [buttonText, setButtonText] = useState<string>(appTheme?.welcomePopupButtonText || 'শুরু করুন');
   const [badge, setBadge] = useState<string>(appTheme?.welcomePopupBadge || 'স্বাগতম বার্তা');
   const [actionText, setActionText] = useState<string>(appTheme?.welcomePopupActionText || 'জরুরি সেবা');
@@ -108,8 +115,13 @@ export const WelcomePopupManagerCard: React.FC<WelcomePopupManagerCardProps> = (
     if (appTheme) {
       setIsActive(appTheme.isWelcomePopupActive ?? true);
       if (!editingId) {
-        setTitle(appTheme.welcomePopupTitle || 'আমার কুষ্টিয়াে আপনাকে স্বাগতম!');
-        setMessage(appTheme.welcomePopupMessage || 'কুষ্টিয়া শহরের সব প্রয়োজনীয় জরুরি সেবা, ডাক্তার ডিরেক্টরি, রক্তের ডাক, ট্রেনের সময়সূচি এবং স্থানীয় কেনাবেচা ও বাসা ভাড়ার তথ্য এখন আপনার হাতের মুঠোয়।');
+        const rawT = appTheme.welcomePopupTitle || 'আমার কুষ্টিয়ায় আপনাকে স্বাগতম!';
+        const cleanT = (rawT.includes('কানেক্টে') || rawT.includes('কুষ্টিয়া কানেক্ট'))
+          ? 'আমার কুষ্টিয়ায় আপনাকে স্বাগতম!'
+          : rawT.replace(/সৈয়দপুর|সৈয়দপুর|Syedpur|Saidpur/gi, 'কুষ্টিয়া').replace(/আমার কুষ্টিয়াে/g, 'আমার কুষ্টিয়ায়');
+        setTitle(cleanT);
+        const rawM = appTheme.welcomePopupMessage || 'কুষ্টিয়া শহরের সব প্রয়োজনীয় জরুরি সেবা, ডাক্তার ডিরেক্টরি, রক্তের ডাক, ট্রেনের সময়সূচি এবং স্থানীয় কেনাবেচা ও বাসা ভাড়ার তথ্য এখন আপনার হাতের মুঠোয়।';
+        setMessage(rawM.replace(/সৈয়দপুর|সৈয়দপুর|Syedpur|Saidpur/gi, 'কুষ্টিয়া'));
         setButtonText(appTheme.welcomePopupButtonText || 'শুরু করুন');
         setBadge(appTheme.welcomePopupBadge || 'স্বাগতম বার্তা');
         setActionText(appTheme.welcomePopupActionText || 'জরুরি সেবা');
@@ -273,7 +285,7 @@ export const WelcomePopupManagerCard: React.FC<WelcomePopupManagerCardProps> = (
     setEditingId(null);
     switch (presetType) {
       case 'welcome':
-        setTitle('আমার কুষ্টিয়াে আপনাকে স্বাগতম!');
+        setTitle('আমার কুষ্টিয়ায় আপনাকে স্বাগতম!');
         setBadge('স্বাগতম বার্তা');
         setMessage('কুষ্টিয়া শহরের সব প্রয়োজনীয় জরুরি সেবা, ডাক্তার ডিরেক্টরি, রক্তের ডাক, ট্রেনের সময়সূচি এবং স্থানীয় কেনাবেচা ও বাসা ভাড়ার তথ্য এখন আপনার হাতের মুঠোয়।');
         setButtonText('শুরু করুন');

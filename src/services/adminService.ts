@@ -54,7 +54,7 @@ export const DEFAULT_APP_THEME: AppThemeConfig = {
   primaryLight: '#ecfdf5', // emerald-50
   primaryGradient: 'from-emerald-700 via-teal-600 to-emerald-800',
   accentBadge: '#10b981',
-  appName: '(আমার কুষ্টিয়া)',
+  appName: 'আমার কুষ্টিয়া',
   tagline: 'কুষ্টিয়া জেলার আধুনিক ডিজিটাল সিটিজেন পোর্টাল',
   marqueeAnnouncement: 'স্বাগতম আমার কুষ্টিয়ায়! বাউল সম্রাট লালন ও বিশ্বকবি রবীন্দ্রনাথ ঠাকুরের স্মৃতিধন্য কুষ্টিয়ার নাগরিক সেবা, বাসা ভাড়া, কেনাবেচা বা জরুরি সাহায্যে আমরা আপনার পাশে।',
   isMarqueeActive: true,
@@ -99,7 +99,21 @@ export const DEFAULT_APP_THEME: AppThemeConfig = {
   patientContactNumber: '',
   showDemoData: true,
   homeBannerUrl: '',
-  autoApprove: true
+  autoApprove: true,
+  socialFacebookPageUrl: 'https://facebook.com/amarkushtia.official',
+  isSocialFacebookPageActive: true,
+  socialFacebookGroupUrl: 'https://facebook.com/groups/amarkushtia',
+  isSocialFacebookGroupActive: true,
+  socialYoutubeUrl: 'https://youtube.com/@amarkushtia',
+  isSocialYoutubeActive: true,
+  socialTiktokUrl: '',
+  isSocialTiktokActive: false,
+  socialInstagramUrl: '',
+  isSocialInstagramActive: false,
+  socialTwitterUrl: '',
+  isSocialTwitterActive: false,
+  socialWebsiteUrl: '',
+  isSocialWebsiteActive: false
 };
 
 export const THEME_PRESETS: Record<ThemeColorKey, { name: string; primary: string; hover: string; light: string; gradient: string; previewClass: string }> = {
@@ -195,7 +209,7 @@ const SEED_USERS: UserProfile[] = [
     isVerified: true,
     role: 'citizen',
     status: 'active',
-    address: 'কুন্দল মোড়, কুষ্টিয়া',
+    address: 'মজমপুর গেট, কুষ্টিয়া',
     ward: 'ওয়ার্ড নং ৩',
     joinedAt: Date.now() - DAY_MS * 6,
     lastActiveAt: Date.now() - 1000 * 60 * 25
@@ -307,7 +321,7 @@ const SEED_USERS: UserProfile[] = [
     isVerified: true,
     role: 'citizen',
     status: 'active',
-    address: 'ক্যান্টনমেন্ট রোড, কুন্দল',
+    address: 'এনএস রোড, কোর্টপাড়া, কুষ্টিয়া',
     ward: 'ওয়ার্ড নং ৩',
     joinedAt: Date.now() - DAY_MS * 2,
     lastActiveAt: Date.now() - 1000 * 60 * 50
@@ -398,15 +412,31 @@ const ADMIN_EMAIL_SECONDARY = import.meta.env.VITE_ADMIN_EMAIL_2 || 'habiburrahm
 export const INITIAL_ADMINS: AdminAccount[] = ([
   {
     id: 'admin-super-1',
-    email: ADMIN_EMAIL_PRIMARY,
-    name: 'আমার কুষ্টিয়া — প্রধান অ্যাডমিন',
+    email: 'habiburrahman962540@gmail.com',
+    name: 'হাবিবুর রহমান (প্রধান অ্যাডমিন)',
+    role: 'super_admin' as const,
+    status: 'active' as const,
+    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 30
+  },
+  {
+    id: 'admin-phone-1',
+    email: '01790563831@kushtiaconnect.local',
+    name: 'অ্যাডমিন ০১৭৯০৫৬৩৮৩১',
+    role: 'super_admin' as const,
+    status: 'active' as const,
+    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 30
+  },
+  {
+    id: 'admin-phone-2',
+    email: '01789344517@kushtiaconnect.local',
+    name: 'অ্যাডমিন ০১৭৮৯৩৪৪৫১৭',
     role: 'super_admin' as const,
     status: 'active' as const,
     createdAt: Date.now() - 1000 * 60 * 60 * 24 * 30
   },
   {
     id: 'admin-super-2',
-    email: ADMIN_EMAIL_SECONDARY,
+    email: 'mh7539019@gmail.com',
     name: 'আমার কুষ্টিয়া — সহকারী অ্যাডমিন',
     role: 'super_admin' as const,
     status: 'active' as const,
@@ -555,13 +585,47 @@ export function verifyAdminPin(_enteredPin: string): boolean {
 }
 
 // 2. Theme & Configuration Management
+export function sanitizeAppThemeConfig(config: Partial<AppThemeConfig> | null | undefined): AppThemeConfig {
+  const merged: AppThemeConfig = { ...DEFAULT_APP_THEME, ...(config || {}) };
+  
+  const sanitizeStr = (str: string | undefined, defaultVal: string): string => {
+    if (!str || typeof str !== 'string') return defaultVal;
+    let cleaned = str
+      .replace(/সৈয়দপুর|সৈয়দপুর|Syedpur|Saidpur/gi, 'কুষ্টিয়া')
+      .replace(/নীলফামারী|নীলফামারি/gi, 'কুষ্টিয়া');
+    return cleaned;
+  };
+
+  merged.appName = 'আমার কুষ্টিয়া';
+
+  merged.tagline = sanitizeStr(merged.tagline, DEFAULT_APP_THEME.tagline);
+  merged.cityName = sanitizeStr(merged.cityName, DEFAULT_APP_THEME.cityName);
+  merged.marqueeAnnouncement = sanitizeStr(merged.marqueeAnnouncement, DEFAULT_APP_THEME.marqueeAnnouncement);
+  merged.emergencyAlert = sanitizeStr(merged.emergencyAlert, DEFAULT_APP_THEME.emergencyAlert);
+  
+  let rawPopupTitle = sanitizeStr(merged.welcomePopupTitle, 'আমার কুষ্টিয়ায় আপনাকে স্বাগতম!');
+  if (rawPopupTitle.includes('কানেক্ট') || rawPopupTitle.includes('আমার কুষ্টিয়াে')) {
+    rawPopupTitle = 'আমার কুষ্টিয়ায় আপনাকে স্বাগতম!';
+  }
+  merged.welcomePopupTitle = rawPopupTitle;
+
+  merged.welcomePopupMessage = sanitizeStr(merged.welcomePopupMessage, DEFAULT_APP_THEME.welcomePopupMessage || 'কুষ্টিয়া শহরের সব প্রয়োজনীয় জরুরি সেবা, ডাক্তার ডিরেক্টরি, রক্তের ডাক, ট্রেনের সময়সূচি এবং স্থানীয় কেনাবেচা ও বাসা ভাড়ার তথ্য এখন আপনার হাতের মুঠোয়।');
+  merged.volunteerPopupMessage = sanitizeStr(merged.volunteerPopupMessage, DEFAULT_APP_THEME.volunteerPopupMessage);
+
+  return merged;
+}
+
 export function getAppThemeConfig(): AppThemeConfig {
   if (typeof window === 'undefined') return DEFAULT_APP_THEME;
   try {
     const stored = localStorage.getItem(ADMIN_CONFIG_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      return { ...DEFAULT_APP_THEME, ...parsed };
+      const sanitized = sanitizeAppThemeConfig(parsed);
+      if (stored.includes('সৈয়দ') || stored.includes('সৈয়দ') || stored.includes('কানেক্ট') || stored.includes('(') || /saidpur|syedpur|নীলফামারী/i.test(stored)) {
+        localStorage.setItem(ADMIN_CONFIG_KEY, JSON.stringify(sanitized));
+      }
+      return sanitized;
     }
   } catch (e) {
     console.warn('Error reading app theme config from localStorage', e);
@@ -571,7 +635,8 @@ export function getAppThemeConfig(): AppThemeConfig {
 
 export function saveAppThemeConfig(config: Partial<AppThemeConfig>): AppThemeConfig {
   const current = getAppThemeConfig();
-  const updated: AppThemeConfig = { ...current, ...config };
+  const rawUpdated: AppThemeConfig = { ...current, ...config };
+  const updated = sanitizeAppThemeConfig(rawUpdated);
   try {
     if (typeof window !== 'undefined') {
       localStorage.setItem(ADMIN_CONFIG_KEY, JSON.stringify(updated));
@@ -648,9 +713,10 @@ export function saveManagedUsers(users: UserProfile[]) {
   }
 }
 
-export async function fetchManagedUsersFromFirestore(): Promise<UserProfile[]> {
+export async function fetchManagedUsersFromFirestore(maxLimit = 50): Promise<UserProfile[]> {
   try {
-    const snap = await getDocs(collection(db, 'users'));
+    const q = query(collection(db, 'users'), orderBy('lastActiveAt', 'desc'), limit(maxLimit));
+    const snap = await getDocs(q);
     const firestoreUsers: UserProfile[] = [];
     snap.forEach((docSnap) => {
       const data = docSnap.data();
@@ -664,34 +730,13 @@ export async function fetchManagedUsersFromFirestore(): Promise<UserProfile[]> {
         isVerified: data.isVerified ?? false,
         role: data.role || 'citizen',
         status: data.status || 'active',
-        joinedAt: data.joinedAt || (data.createdAt ? (typeof data.createdAt === 'number' ? data.createdAt : Date.now()) : Date.now() - 1000 * 60 * 60 * 24),
+        joinedAt: data.joinedAt || Date.now(),
         lastActiveAt: data.lastActiveAt || Date.now(),
         isFlagged: data.isFlagged || false,
         flagReason: data.flagReason || undefined,
         banExpiresAt: data.banExpiresAt || undefined,
         banReason: data.banReason || undefined
       });
-    });
-
-    // Also include unique authors from postService master posts
-    const posts = postService.getMasterPosts();
-    const existingUids = new Set(firestoreUsers.map(u => u.uid));
-    
-    posts.forEach(p => {
-      const authorId = p.authorId || (p.contactPhone ? `phone-${p.contactPhone}` : null);
-      if (authorId && !existingUids.has(authorId)) {
-        existingUids.add(authorId);
-        firestoreUsers.push({
-          uid: authorId,
-          displayName: p.authorName || 'কুষ্টিয়া নাগরিক',
-          phone: p.contactPhone,
-          isVerified: p.isVerified || false,
-          role: 'citizen',
-          status: 'active',
-          joinedAt: p.createdAt || (Date.now() - 1000 * 60 * 60 * 48),
-          lastActiveAt: p.createdAt || Date.now()
-        });
-      }
     });
 
     const result = firestoreUsers.length > 0 ? firestoreUsers : SEED_USERS;

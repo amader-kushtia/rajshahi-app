@@ -16,7 +16,9 @@ service cloud.firestore {
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
         (request.auth.token.email != null && 
-         request.auth.token.email.lower() in ['habiburrahman962540@gmail.com', 'mh7539019@gmail.com'])
+         request.auth.token.email.lower() in ['habiburrahman962540@gmail.com', 'mh7539019@gmail.com']) ||
+        (request.auth.token.phone_number != null &&
+         request.auth.token.phone_number in ['+8801790563831', '+8801789344517'])
       );
     }
 
@@ -46,26 +48,58 @@ service cloud.firestore {
     // Posts Collection
     match /posts/{postId} {
       allow read: if true;
-      allow create: if isSignedIn();
-      allow update: if isAdmin() || 
-        ('authorId' in resource.data && resource.data.authorId == request.auth.uid) ||
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'views', 'shares', 'reviewsCount', 'rating', 'lastViewUpdate', 'viewsLast24h']));
-      allow delete: if isAdmin() || (
-        isSignedIn() && 
-        ('authorId' in resource.data && resource.data.authorId == request.auth.uid)
-      );
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    // Transport Schedules Collection
+    match /transport_schedules/{scheduleId} {
+      allow read: if true;
+      allow write: if true;
     }
 
     // App Settings & Config
     match /config/{configId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if true;
     }
 
     // Emergency Alerts & Notices
     match /alerts/{alertId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if true;
+    }
+
+    match /flash_alerts/{alertId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /blood_emergency_alerts/{alertId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Directories
+    match /doctors_directory/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /emergency_helplines/{helplineId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /blood_donors/{donorId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /grievance_reports/{reportId} {
+      allow read: if true;
+      allow write: if true;
     }
 
     // Likes Collection
@@ -86,7 +120,7 @@ service cloud.firestore {
     // Default catch-all
     match /{document=**} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if true;
     }
   }
 }

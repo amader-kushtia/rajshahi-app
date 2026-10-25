@@ -75,7 +75,7 @@ export const CitizenAppPreviewModal: React.FC<CitizenAppPreviewModalProps> = ({
             <div className="bg-emerald-800 text-white p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-base font-black">{(appTheme.appName && appTheme.appName !== 'আমার কুষ্টিয়া') ? appTheme.appName : 'আমার কুষ্টিয়া'}</h4>
+                  <h4 className="text-base font-black">আমার কুষ্টিয়া</h4>
                   <p className="text-[10px] text-emerald-200">{appTheme.tagline}</p>
                 </div>
                 <div className="text-[10px] font-bold bg-white/10 px-2 py-1 rounded-full backdrop-blur-xs">

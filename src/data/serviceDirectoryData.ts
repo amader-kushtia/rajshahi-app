@@ -703,49 +703,36 @@ export const SERVICES_DIRECTORY: Record<string, ServiceDefinition> = {
     ]
   },
 
-  // আবাসিক হোটেল সেবা
-  'residential-hotel': {
-    id: 'residential-hotel',
-    label: 'আবাসিক হোটেল সেবা',
-    englishLabel: 'Residential Hotel Service',
-    tagline: 'নিরাপদ ও আরামদায়ক আবাসন, এসি/নন-এসি রুম ও গেস্টহাউস বুকিং',
+  // সিএনজি ও অটো বাইক
+  'cng-auto': {
+    id: 'cng-auto',
+    label: 'সিএনজি ও অটো বাইক',
+    englishLabel: 'CNG & Auto Bike',
+    tagline: 'লোকাল সিএনজি, অটো রিকশা ও ইজিবাইক স্ট্যান্ড এবং ভাড়ার তথ্য',
     group: 'transport',
-    groupLabel: 'ভ্রমণ ও আবাসন',
-    icon: Building2,
+    groupLabel: 'যাতায়াত ও ভাড়া',
+    icon: Car,
     themeColor: {
-      text: 'text-rose-700',
-      bg: 'bg-rose-50',
-      border: 'border-rose-200',
-      badgeBg: 'bg-rose-600 text-white',
-      gradient: 'from-rose-600 to-pink-800',
+      text: 'text-amber-700',
+      bg: 'bg-amber-50',
+      border: 'border-amber-200',
+      badgeBg: 'bg-amber-600 text-white',
+      gradient: 'from-amber-600 to-orange-800',
     },
-    availableHours: '২৪ ঘণ্টা খোলা',
-    overview: 'কুষ্টিয়া শহর ও উপজেলা সদরের মানসম্মত আবাসিক হোটেল, গেস্টহাউস এবং ভিআইপি রুম বুকিংয়ের তথ্য।',
+    availableHours: '২৪ ঘণ্টা',
+    overview: 'কুষ্টিয়া শহর, মজমপুর গেট, এনএস রোড এবং বিভিন্ন উপজেলা রুটের সিএনজি, অটো রিকশা ও ইজিবাইক স্ট্যান্ডের তথ্য।',
     listings: [
       {
-        id: 'hot-1',
-        title: 'হোটেল রিভার ভিউ (এসি/নন-এসি)',
-        upazila: 'কুষ্টিয়া সদর',
-        address: 'বড় বাজার সংলগ্ন, এনএস রোড, কুষ্টিয়া',
-        phone: '01712-334455',
-        altPhone: '071-62345',
-        workingHours: '২৪ ঘণ্টা খোলা',
-        badge: 'জনপ্রিয় হোটেল',
-        badgeType: 'popular',
-        servicesOffered: ['এসি ভিআইপি রুম', 'নন-এসি বাজেট রুম', 'কনফারেন্স রুম', '২৪ ঘণ্টা রুম সার্ভিস'],
-        imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80'
-      },
-      {
-        id: 'hot-2',
-        title: 'কুষ্টিয়া গেস্টহাউস ও আবাসিক',
+        id: 'cng-1',
+        title: 'মজমপুর গেট সিএনজি স্ট্যান্ড',
         upazila: 'কুষ্টিয়া সদর',
         address: 'মজমপুর গেট, কুষ্টিয়া',
-        phone: '01911-556677',
-        workingHours: '২৪ ঘণ্টা খোলা',
-        badge: 'নিরাপদ আবাসন',
-        badgeType: 'verified',
-        servicesOffered: ['ফ্যামিলি স্যুট', 'সিঙ্গেল রুম', 'গাড়ী পার্কিং সুবিধা', 'নিরাপদ পরিবেশ'],
-        imageUrl: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800&auto=format&fit=crop&q=80'
+        phone: '01712-000000',
+        workingHours: '২৪ ঘণ্টা',
+        badge: 'প্রধান স্ট্যান্ড',
+        badgeType: 'popular',
+        servicesOffered: ['শহর ও উপজেলা রুট', 'রিজার্ভ সিএনজি', 'জরুরি যাতায়াত'],
+        imageUrl: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&auto=format&fit=crop&q=80'
       }
     ]
   },
@@ -1078,49 +1065,51 @@ export const SERVICES_DIRECTORY: Record<string, ServiceDefinition> = {
     ],
   },
 
-  // 18. সিএনজি ও অটো বাইক
-  'cng-auto': {
-    id: 'cng-auto',
-    label: 'সিএনজি ও অটো বাইক',
-    englishLabel: 'CNG & Auto Bike',
-    tagline: 'কুষ্টিয়া শহর ও বিভিন্ন রুটের সিএনজি, অটো রিকশা ও ইজিবাইক স্ট্যান্ড এবং ভাড়ার তালিকা',
+  // 18. আবাসিক হোটেল ও রিসোর্ট
+  hotel: {
+    id: 'hotel',
+    label: 'আবাসিক হোটেল ও রিসোর্ট',
+    englishLabel: 'Hotels & Resorts',
+    tagline: 'কুষ্টিয়া শহর ও বিভিন্ন উপজেলার নিরাপদ আবাসিক হোটেল, গেস্ট হাউস এবং রিসোর্ট',
     group: 'transport',
-    groupLabel: 'যাতায়াত ও ভাড়া',
-    icon: Car,
+    groupLabel: 'যাতায়াত ও ভাড়া',
+    icon: Hotel,
     themeColor: {
-      text: 'text-emerald-700',
-      bg: 'bg-emerald-50',
-      border: 'border-emerald-200',
-      badgeBg: 'bg-emerald-700 text-white',
-      gradient: 'from-emerald-600 to-teal-800',
+      text: 'text-amber-700',
+      bg: 'bg-amber-50',
+      border: 'border-amber-200',
+      badgeBg: 'bg-amber-700 text-white',
+      gradient: 'from-amber-600 to-orange-800',
     },
-    availableHours: '২৪ ঘণ্টা',
+    availableHours: '২৪ ঘণ্টা চেক-ইন',
     overview:
-      'কুষ্টিয়া পৌরসভা ও বিভিন্ন উপজেলা রুটে চলাচলকারী সিএনজি অটোরিকশা, ব্যাটারিচালিত অটো বাইক ও ইজিবাইক স্ট্যান্ডের তথ্য এবং নির্ধারিত ভাড়া।',
+      'কুষ্টিয়া পৌরসভা এলাকায় অবস্থিত নিরাপদ ও মানসম্মত আবাসিক হোটেল, গেস্ট হাউস এবং পর্যটন মোটেলের তালিকা ও যোগাযোগের নম্বর।',
     listings: [
       {
-        id: 'cng-1',
-        title: 'মজমপুর গেট সিএনজি ও অটো স্ট্যান্ড',
+        id: 'ht-1',
+        title: 'হোটেল গোল্ডেন স্টার (আবাসিক)',
         upazila: 'কুষ্টিয়া সদর',
-        address: 'মজমপুর গেট, কুষ্টিয়া সদর',
-        phone: '01712-112233',
-        workingHours: 'সকাল ৬টা - রাত ১০টা',
-        badge: 'প্রধান স্ট্যান্ড',
+        address: 'এনএস রোড, মজমপুর গেট, কুষ্টিয়া',
+        phone: '071-62500',
+        altPhone: '01712-334455',
+        workingHours: '২৪ ঘণ্টা খোলা',
+        badge: 'জনপ্রিয় আবাসিক',
         badgeType: 'popular',
-        servicesOffered: ['শহর ও উপজেলা রুট', 'রিজার্ভ সিএনজি', 'ভাড়া তালিকা নিয়ন্ত্রণ'],
-        imageUrl: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&auto=format&fit=crop&q=80'
+        servicesOffered: ['এসি ও নন-এসি রুম', '২৪ ঘণ্টা রুম সার্ভিস', 'সিকিউরিটি ও পার্কিং'],
+        imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80'
       },
       {
-        id: 'cng-2',
-        title: 'বড় বাজার অটো বাইক স্ট্যান্ড',
+        id: 'ht-2',
+        title: 'কুষ্টিয়া ইন ও রিসোর্ট',
         upazila: 'কুষ্টিয়া সদর',
-        address: 'বড় বাজার সংলগ্ন, এনএস রোড, কুষ্টিয়া',
-        phone: '01718-445566',
+        address: 'পাঁচ মাথার মোড়, কুষ্টিয়া সদর',
+        phone: '071-61234',
+        altPhone: '01715-667788',
         workingHours: '২৪ ঘণ্টা',
-        badge: 'ইজিবাইক ও রিকশা',
+        badge: 'ভিআইপি গেস্ট হাউস',
         badgeType: 'verified',
-        servicesOffered: ['লোকাল প্যাসেঞ্জার', 'মালপত্র পরিবহন', 'মাসিক চুক্তি'],
-        imageUrl: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&auto=format&fit=crop&q=80'
+        servicesOffered: ['ফ্যামিলি স্যুট', 'কনফারেন্স রুম', 'হাই স্পিড ওয়াইফাই'],
+        imageUrl: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800&auto=format&fit=crop&q=80'
       }
     ],
   },

@@ -11,7 +11,7 @@ export type CategoryType =
   | 'courier' | 'computer-print' | 'freelancing' | 'car-repair' | 'school-college' | 'education-result' | 'car-rental' 
   | 'agriculture' | 'fisheries' | 'hotel' | 'grocery' | 'vegetables' | 'beauty-parlor' | 'laundry' | 'furniture' 
   | 'hardware' | 'internet' | 'utility' | 'eye-care' | 'dental-care' | 'fitness' | 'sports'
-  | 'union-parishad' | 'cng-auto';
+  | 'union-parishad' | 'cng-auto' | 'news';
 
 
 export interface UserProfile {
@@ -35,6 +35,10 @@ export interface UserProfile {
   bannedAt?: number;
   joinedAt?: number;
   lastActiveAt?: number;
+  bloodGroup?: string;
+  profession?: string;
+  upazila?: string;
+  dob?: string;
 }
 
 export interface DailyTrendItem {
@@ -125,6 +129,7 @@ export interface PostItem {
   shares?: number;
   viewsLast24h?: number;
   lastViewUpdate?: number;
+  updatedAt?: number;
   rating?: number;
   reviewsCount?: number;
   reviews?: ServiceReview[];
@@ -362,6 +367,21 @@ export interface AppThemeConfig {
   showDemoData?: boolean;
   homeBannerUrl?: string;
   autoApprove?: boolean;
+  // Social Media Links & Footer Control
+  socialFacebookPageUrl?: string;
+  isSocialFacebookPageActive?: boolean;
+  socialFacebookGroupUrl?: string;
+  isSocialFacebookGroupActive?: boolean;
+  socialYoutubeUrl?: string;
+  isSocialYoutubeActive?: boolean;
+  socialTiktokUrl?: string;
+  isSocialTiktokActive?: boolean;
+  socialInstagramUrl?: string;
+  isSocialInstagramActive?: boolean;
+  socialTwitterUrl?: string;
+  isSocialTwitterActive?: boolean;
+  socialWebsiteUrl?: string;
+  isSocialWebsiteActive?: boolean;
 }
 
 export interface WalletTransaction {
@@ -444,6 +464,7 @@ export interface ActivityLog {
     | 'alert_broadcast'
     | 'doctor_updated'
     | 'helpline_updated'
+    | 'transport_updated'
     | 'report_status_changed'
     | 'blood_alert_created'
     | 'login_attempt'

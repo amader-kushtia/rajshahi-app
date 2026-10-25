@@ -1,47 +1,59 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
 import { 
   CloudSun, 
   Droplets, 
   Wind, 
-  Thermometer, 
   RefreshCw, 
   MapPin, 
   Sun, 
   CloudRain, 
   CloudLightning, 
   CloudFog, 
-  Cloud, 
   Eye,
-  Compass,
-  Sparkles
+  Activity,
+  ShieldCheck,
+  Flame
 } from 'lucide-react';
 
-interface WeatherData {
+interface WeatherAqiData {
   temp: number;
   feelsLike: number;
   tempMin: number;
   tempMax: number;
   humidity: number;
-  windSpeed: number; // km/h
+  windSpeed: number;
   pressure: number;
-  visibility: number; // km
+  visibility: number;
   condition: string;
   description: string;
   iconCode: string;
-  sunrise?: number;
-  sunset?: number;
+  aqi: number;
+  pm25: number;
+  pm10: number;
   lastUpdated: string;
 }
 
-// Convert English digits to Bengali numerals
 const toBengaliNumber = (num: number | string): string => {
   const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
   return String(num).replace(/\d/g, (d) => bengaliDigits[parseInt(d, 10)]);
 };
 
-// Map weather condition codes to Bengali descriptions and appropriate Lucide icons
+const getAqiDetails = (aqi: number) => {
+  if (aqi <= 50) {
+    return { label: 'ভালো (Good)', color: 'bg-emerald-500/20 text-emerald-200 border-emerald-400/40', barColor: 'bg-emerald-400' };
+  }
+  if (aqi <= 100) {
+    return { label: 'সহনীয় (Moderate)', color: 'bg-amber-500/20 text-amber-200 border-amber-400/40', barColor: 'bg-amber-400' };
+  }
+  if (aqi <= 150) {
+    return { label: 'সংবেদনশীলদের জন্য ঝুঁকিপূর্ণ', color: 'bg-orange-500/20 text-orange-200 border-orange-400/40', barColor: 'bg-orange-400' };
+  }
+  if (aqi <= 200) {
+    return { label: 'অস্বাস্থ্যকর (Unhealthy)', color: 'bg-rose-500/20 text-rose-200 border-rose-400/40', barColor: 'bg-rose-500' };
+  }
+  return { label: 'খুবই অস্বাস্থ্যকর (Very Unhealthy)', color: 'bg-purple-500/20 text-purple-200 border-purple-400/40', barColor: 'bg-purple-500' };
+};
+
 const getWeatherDetails = (conditionCode: string, mainGroup: string, originalDesc: string) => {
   const group = (mainGroup || '').toLowerCase();
   
@@ -50,10 +62,9 @@ const getWeatherDetails = (conditionCode: string, mainGroup: string, originalDes
       title: 'বজ্রবৃষ্টি',
       desc: originalDesc || 'বজ্রসহ বৃষ্টিপাতের সম্ভাবনা রয়েছে',
       icon: CloudLightning,
-      bgGradient: 'from-slate-900 via-indigo-950 to-slate-900',
-      textColor: 'text-indigo-200',
-      badgeBg: 'bg-indigo-500/20 text-indigo-200 border-indigo-500/30',
-      accentColor: 'text-amber-400'
+      bgGradient: 'from-indigo-900 via-slate-900 to-blue-950',
+      accentColor: 'text-amber-400',
+      badgeBg: 'bg-indigo-500/20 text-indigo-200 border-indigo-500/30'
     };
   }
   if (group.includes('rain') || group.includes('drizzle')) {
@@ -61,10 +72,9 @@ const getWeatherDetails = (conditionCode: string, mainGroup: string, originalDes
       title: 'বৃষ্টিপাত',
       desc: originalDesc || 'হালকা থেকে মাঝারি বৃষ্টিপাত হচ্ছে',
       icon: CloudRain,
-      bgGradient: 'from-blue-950 via-slate-900 to-teal-950',
-      textColor: 'text-sky-200',
-      badgeBg: 'bg-sky-500/20 text-sky-200 border-sky-500/30',
-      accentColor: 'text-sky-400'
+      bgGradient: 'from-blue-900 via-teal-950 to-slate-900',
+      accentColor: 'text-sky-300',
+      badgeBg: 'bg-sky-500/20 text-sky-200 border-sky-500/30'
     };
   }
   if (group.includes('clear')) {
@@ -72,10 +82,9 @@ const getWeatherDetails = (conditionCode: string, mainGroup: string, originalDes
       title: 'পরিষ্কার আকাশ',
       desc: originalDesc || 'রৌদ্রোজ্জ্বল ও মনোরম আবহাওয়া',
       icon: Sun,
-      bgGradient: 'from-sky-900 via-emerald-950 to-teal-950',
-      textColor: 'text-amber-200',
-      badgeBg: 'bg-amber-400/20 text-amber-200 border-amber-400/30',
-      accentColor: 'text-amber-400'
+      bgGradient: 'from-sky-800 via-teal-900 to-emerald-950',
+      accentColor: 'text-amber-300',
+      badgeBg: 'bg-amber-400/20 text-amber-200 border-amber-400/30'
     };
   }
   if (group.includes('fog') || group.includes('mist') || group.includes('haze')) {
@@ -83,100 +92,88 @@ const getWeatherDetails = (conditionCode: string, mainGroup: string, originalDes
       title: 'কুয়াশাচ্ছন্ন / ধোঁয়াশা',
       desc: originalDesc || 'হালকা কুয়াশা ও আর্দ্র আবহাওয়া',
       icon: CloudFog,
-      bgGradient: 'from-slate-800 via-slate-900 to-zinc-900',
-      textColor: 'text-slate-200',
-      badgeBg: 'bg-slate-400/20 text-slate-200 border-slate-400/30',
-      accentColor: 'text-slate-300'
+      bgGradient: 'from-slate-800 via-teal-950 to-zinc-900',
+      accentColor: 'text-teal-300',
+      badgeBg: 'bg-teal-400/20 text-teal-200 border-teal-400/30'
     };
   }
   
-  // Default: Clouds / Partially Cloudy
   return {
     title: 'আংশিক মেঘলা',
     desc: originalDesc || 'আকাশে মেঘের আনাগোনা রয়েছে',
     icon: CloudSun,
-    bgGradient: 'from-slate-900 via-teal-950 to-emerald-950',
-    textColor: 'text-emerald-200',
-    badgeBg: 'bg-emerald-400/20 text-emerald-200 border-emerald-400/30',
-    accentColor: 'text-amber-300'
+    bgGradient: 'from-slate-900 via-emerald-950 to-teal-950',
+    accentColor: 'text-amber-300',
+    badgeBg: 'bg-emerald-400/20 text-emerald-200 border-emerald-400/30'
   };
 };
 
-const mapWmoToWeather = (code: number): { condition: string; description: string; iconCode: string } => {
-  if (code === 0) {
-    return { condition: 'Clear', description: 'পরিষ্কার আকাশ', iconCode: '01d' };
-  }
-  if ([1, 2, 3].includes(code)) {
-    return { condition: 'Clouds', description: 'আংশিক মেঘলা', iconCode: '02d' };
-  }
-  if ([45, 48].includes(code)) {
-    return { condition: 'Fog', description: 'কুয়াশাচ্ছন্ন আবহাওয়া', iconCode: '50d' };
-  }
-  if ([51, 53, 55, 56, 57].includes(code)) {
-    return { condition: 'Drizzle', description: 'গুঁড়ি গুঁড়ি বৃষ্টি', iconCode: '09d' };
-  }
-  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) {
-    return { condition: 'Rain', description: 'বৃষ্টিপাত হচ্ছে', iconCode: '10d' };
-  }
-  if ([71, 73, 75, 77, 85, 86].includes(code)) {
-    return { condition: 'Snow', description: 'তুষারপাত', iconCode: '13d' };
-  }
-  if ([95, 96, 99].includes(code)) {
-    return { condition: 'Thunderstorm', description: 'বজ্রসহ বৃষ্টিপাত', iconCode: '11d' };
-  }
+const mapWmoToWeather = (code: number) => {
+  if (code === 0) return { condition: 'Clear', description: 'পরিষ্কার আকাশ', iconCode: '01d' };
+  if ([1, 2, 3].includes(code)) return { condition: 'Clouds', description: 'আংশিক মেঘলা', iconCode: '02d' };
+  if ([45, 48].includes(code)) return { condition: 'Fog', description: 'কুয়াশাচ্ছন্ন আবহাওয়া', iconCode: '50d' };
+  if ([51, 53, 55, 56, 57].includes(code)) return { condition: 'Drizzle', description: 'গুঁড়ি গুঁড়ি বৃষ্টি', iconCode: '09d' };
+  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return { condition: 'Rain', description: 'বৃষ্টিপাত হচ্ছে', iconCode: '10d' };
+  if ([95, 96, 99].includes(code)) return { condition: 'Thunderstorm', description: 'বজ্রসহ বৃষ্টিপাত', iconCode: '11d' };
   return { condition: 'Clouds', description: 'আংশিক মেঘলা', iconCode: '03d' };
 };
 
 export const LiveWeatherWidget: React.FC = () => {
-  const [weather, setWeather] = useState<WeatherData | null>(() => {
-    // Attempt to load cached weather from localStorage for instant display
+  const [data, setData] = useState<WeatherAqiData | null>(() => {
     try {
-      const cached = localStorage.getItem('kushtia_live_weather_v1');
-      if (cached) {
-        return JSON.parse(cached);
-      }
-    } catch {
-      // ignore
-    }
-    // Fallback initial pleasant weather for Kushtia
+      const cached = localStorage.getItem('kushtia_weather_aqi_v2');
+      if (cached) return JSON.parse(cached);
+    } catch {}
     return {
-      temp: 28,
-      feelsLike: 30,
-      tempMin: 24,
-      tempMax: 31,
-      humidity: 68,
-      windSpeed: 12,
-      pressure: 1012,
-      visibility: 8,
-      condition: 'Clouds',
-      description: 'আংশিক মেঘলা ও শান্ত আবহাওয়া',
-      iconCode: '02d',
+      temp: 29,
+      feelsLike: 32,
+      tempMin: 25,
+      tempMax: 33,
+      humidity: 65,
+      windSpeed: 14,
+      pressure: 1011,
+      visibility: 9,
+      condition: 'Clear',
+      description: 'রৌদ্রোজ্জ্বল ও মনোরম আবহাওয়া',
+      iconCode: '01d',
+      aqi: 48,
+      pm25: 14.2,
+      pm10: 28.5,
       lastUpdated: new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })
     };
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [hasLiveError, setHasLiveError] = useState<boolean>(false);
 
-  const fetchWeather = useCallback(async () => {
+  const fetchWeatherAndAqi = useCallback(async () => {
     setIsLoading(true);
-    setHasLiveError(false);
-
     try {
-      // Fetch precise, real-time weather from public Open-Meteo API for Kushtia's exact coordinates
-      const response = await fetch(
-        'https://api.open-meteo.com/v1/forecast?latitude=23.9015&longitude=89.1205&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto'
-      );
-      if (!response.ok) {
-        throw new Error('Open-Meteo API error');
-      }
-      const data = await response.json();
-      
-      const current = data.current;
-      const daily = data.daily;
+      // Parallel fetch for Open-Meteo Weather and Air Quality for Kushtia (23.9015, 89.1205)
+      const [weatherRes, aqiRes] = await Promise.all([
+        fetch('https://api.open-meteo.com/v1/forecast?latitude=23.9015&longitude=89.1205&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,surface_pressure,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&timezone=auto'),
+        fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=23.9015&longitude=89.1205&current=european_aqi,pm2_5,pm10')
+      ]);
+
+      if (!weatherRes.ok) throw new Error('Weather fetch failed');
+      const weatherJson = await weatherRes.json();
+      const current = weatherJson.current;
+      const daily = weatherJson.daily;
       const mapped = mapWmoToWeather(current.weather_code);
 
-      const liveData: WeatherData = {
+      let aqiVal = 48;
+      let pm25Val = 14.2;
+      let pm10Val = 28.5;
+
+      if (aqiRes.ok) {
+        const aqiJson = await aqiRes.json();
+        if (aqiJson.current) {
+          aqiVal = Math.round(aqiJson.current.european_aqi || 48);
+          pm25Val = Number((aqiJson.current.pm2_5 || 14.2).toFixed(1));
+          pm10Val = Number((aqiJson.current.pm10 || 28.5).toFixed(1));
+        }
+      }
+
+      const updated: WeatherAqiData = {
         temp: Math.round(current.temperature_2m),
         feelsLike: Math.round(current.apparent_temperature),
         tempMin: Math.round(daily.temperature_2m_min[0]),
@@ -184,180 +181,184 @@ export const LiveWeatherWidget: React.FC = () => {
         humidity: current.relative_humidity_2m,
         windSpeed: Math.round(current.wind_speed_10m),
         pressure: Math.round(current.surface_pressure),
-        visibility: 10, // Open-Meteo standard baseline visibility in km
+        visibility: 10,
         condition: mapped.condition,
         description: mapped.description,
         iconCode: mapped.iconCode,
+        aqi: aqiVal,
+        pm25: pm25Val,
+        pm10: pm10Val,
         lastUpdated: new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })
       };
 
-      setWeather(liveData);
+      setData(updated);
       try {
-        localStorage.setItem('kushtia_live_weather_v1', JSON.stringify(liveData));
+        localStorage.setItem('kushtia_weather_aqi_v2', JSON.stringify(updated));
       } catch {}
-    } catch (apiErr) {
-      console.warn('Failed to fetch live weather from Open-Meteo, trying Firestore fallback:', apiErr);
-      
-      try {
-        // Fallback: Read from central Firestore weather_cache document
-        const docRef = doc(db, 'weather_cache', 'kushtia');
-        const snap = await getDoc(docRef);
-
-        if (snap.exists()) {
-          const cachedData = snap.data() as WeatherData;
-          setWeather(cachedData);
-          try {
-            localStorage.setItem('kushtia_live_weather_v1', JSON.stringify(cachedData));
-          } catch {}
-        } else {
-          setHasLiveError(true);
-        }
-      } catch (err) {
-        console.warn('Weather cache read notice:', err);
-        setHasLiveError(true);
-      }
+    } catch (err) {
+      console.warn('Live weather/AQI fetch notice:', err);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchWeather();
-    // Auto-refresh from Firestore every 15 minutes
-    const interval = setInterval(fetchWeather, 15 * 60 * 1000);
+    fetchWeatherAndAqi();
+    const interval = setInterval(fetchWeatherAndAqi, 20 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [fetchWeather]);
+  }, [fetchWeatherAndAqi]);
 
-  if (!weather) return null;
+  if (!data) return null;
 
-  const weatherStyle = getWeatherDetails(weather.iconCode, weather.condition, weather.description);
+  const weatherStyle = getWeatherDetails(data.iconCode, data.condition, data.description);
   const IconComponent = weatherStyle.icon;
+  const aqiInfo = getAqiDetails(data.aqi);
 
   return (
-    <div className="mb-4 animate-in fade-in duration-200">
-      <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${weatherStyle.bgGradient} p-4 sm:p-4.5 text-white shadow-md border border-white/15 transition-all`}>
+    <div className="px-3 sm:px-4 mb-5 animate-in fade-in duration-300">
+      <div className={`relative overflow-hidden rounded-[2rem] bg-gradient-to-br ${weatherStyle.bgGradient} p-4 sm:p-5 text-white shadow-xl border border-white/20 transition-all`}>
         
-        {/* Ambient subtle glow effects */}
-        <div className="absolute -right-8 -top-8 w-36 h-36 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -left-8 -bottom-8 w-36 h-36 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        {/* Glowing Lighting Accents */}
+        <div className="absolute -right-10 -top-10 w-40 h-40 bg-amber-400/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-cyan-400/20 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 space-y-3">
+        <div className="relative z-10 space-y-4">
           
-          {/* Top Header: Location, Live Pulse, and Refresh */}
-          <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2.5">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-xl bg-white/15 backdrop-blur-xs flex items-center justify-center text-amber-300 shrink-0">
+          {/* Header Row */}
+          <div className="flex items-center justify-between border-b border-white/15 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-amber-300 shadow-inner">
                 <MapPin className="w-4 h-4 text-amber-300" />
               </div>
               <div>
-                <div className="flex items-center gap-1.5">
-                  <h3 className="text-xs font-black text-white tracking-wide">
-                    কুষ্টিয়া আবহাওয়া
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xs sm:text-sm font-black text-white tracking-wide">
+                    কুষ্টিয়া আবহাওয়া ও বাতাস (Weather & AQI)
                   </h3>
                   <span className="flex h-2 w-2 relative">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
                   </span>
-                  <span className="text-[10px] font-black text-emerald-200 bg-emerald-950/80 px-1.5 py-0.5 rounded-md border border-emerald-400/50">
-                    লাইভ
+                  <span className="text-[10px] font-black text-emerald-200 bg-emerald-950/80 px-2 py-0.5 rounded-md border border-emerald-400/50">
+                    রিয়েল-টাইম
                   </span>
                 </div>
-                <span className="text-[11px] text-white font-black block mt-0.5">
-                  নীলফামারী জেলা • আপডেট: <span className="text-amber-300">{weather.lastUpdated}</span>
+                <span className="text-[11px] text-amber-200 font-bold block mt-0.5">
+                  আপডেট: {data.lastUpdated}
                 </span>
               </div>
             </div>
 
-            {/* Refresh Button */}
             <button
               type="button"
-              onClick={fetchWeather}
+              onClick={fetchWeatherAndAqi}
               disabled={isLoading}
-              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white/90 hover:text-white transition-all backdrop-blur-xs shrink-0 flex items-center gap-1 text-[11px] font-bold border border-white/10"
-              title="আবহাওয়া রিফ্রেশ করুন"
+              className="p-2 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 text-white transition-all backdrop-blur-md flex items-center gap-1.5 text-xs font-bold border border-white/20 shadow-sm cursor-pointer"
+              title="রিফ্রেশ করুন"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-amber-300' : ''}`} />
               <span className="hidden sm:inline">রিফ্রেশ</span>
             </button>
           </div>
 
-          {/* Main Weather Metric Showcase */}
-          <div className="flex items-center justify-between gap-3 pt-0.5">
-            {/* Left: Huge Temp + Condition */}
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/15 flex items-center justify-center shrink-0 shadow-inner">
-                  <IconComponent className={`w-8 h-8 sm:w-9 sm:h-9 ${weatherStyle.accentColor} drop-shadow-md animate-pulse`} />
+          {/* Weather Main Showcase & AQI Side-by-Side */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-center">
+            
+            {/* Weather Box */}
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15 flex items-center justify-between shadow-inner">
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center shrink-0 shadow-md">
+                  <IconComponent className={`w-8 h-8 sm:w-9 sm:h-9 ${weatherStyle.accentColor} animate-pulse`} />
+                </div>
+                <div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl sm:text-4xl font-black text-white tracking-tighter">
+                      {toBengaliNumber(data.temp)}
+                    </span>
+                    <span className="text-xl font-black text-amber-300">°C</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className={`text-[11px] font-black px-2 py-0.5 rounded-full border ${weatherStyle.badgeBg}`}>
+                      {weatherStyle.title}
+                    </span>
+                    <span className="text-[11px] text-white/90 font-bold">
+                      অনুভূত {toBengaliNumber(data.feelsLike)}°C
+                    </span>
+                  </div>
                 </div>
               </div>
+              <div className="text-right hidden xs:block">
+                <span className="text-[11px] text-amber-200 font-bold block">
+                  সর্বোচ্চ: {toBengaliNumber(data.tempMax)}°
+                </span>
+                <span className="text-[11px] text-sky-200 font-bold block mt-0.5">
+                  সর্বনিম্ন: {toBengaliNumber(data.tempMin)}°
+                </span>
+              </div>
+            </div>
 
-              <div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl sm:text-5xl font-black text-white tracking-tighter drop-shadow-sm">
-                    {toBengaliNumber(weather.temp)}
-                  </span>
-                  <span className="text-2xl font-black text-amber-300">°C</span>
+            {/* AQI (Air Quality Index) Box */}
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15 flex flex-col justify-between shadow-inner">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-amber-300 font-black text-xs">
+                  <Activity className="w-4 h-4 text-emerald-300" />
+                  <span>বায়ুর মান (AQI Index)</span>
                 </div>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${aqiInfo.color}`}>
+                  {aqiInfo.label}
+                </span>
+              </div>
 
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className={`text-[12px] font-black px-2 py-0.5 rounded-full border ${weatherStyle.badgeBg}`}>
-                    {weatherStyle.title}
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/10">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl sm:text-3xl font-black text-white">
+                    {toBengaliNumber(data.aqi)}
                   </span>
-                  <span className="text-[12px] text-white font-black">
-                    অনুভূত: {toBengaliNumber(weather.feelsLike)}°C
-                  </span>
+                  <span className="text-xs text-white/80 font-bold">AQI</span>
+                </div>
+                <div className="text-right text-[11px] text-emerald-200 font-bold">
+                  <div>PM2.5: {toBengaliNumber(data.pm25)}</div>
+                  <div>PM10: {toBengaliNumber(data.pm10)}</div>
                 </div>
               </div>
             </div>
 
-            {/* Right: Weather Description note */}
-            <div className="text-right max-w-[140px] hidden xs:block">
-              <span className="text-[12px] text-white font-black block leading-tight">
-                {weatherStyle.desc}
-              </span>
-              <span className="text-[11px] text-amber-200 mt-1 block font-black">
-                সর্বোচ্চ: {toBengaliNumber(weather.tempMax)}° / সর্বনিম্ন: {toBengaliNumber(weather.tempMin)}°
-              </span>
-            </div>
           </div>
 
-          {/* Bottom Grid: Weather Parameters (Humidity, Wind, Air) */}
-          <div className="grid grid-cols-3 gap-2 pt-1 border-t border-white/10">
-            {/* Humidity */}
-            <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-2 sm:px-2.5 flex items-center gap-2 border border-white/10">
+          {/* Bottom Small Metrics Bar */}
+          <div className="grid grid-cols-3 gap-2 pt-1 border-t border-white/15">
+            <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 flex items-center gap-2 border border-white/10">
               <div className="w-6 h-6 rounded-lg bg-sky-400/20 text-sky-300 flex items-center justify-center shrink-0">
                 <Droplets className="w-3.5 h-3.5" />
               </div>
               <div className="overflow-hidden">
-                <span className="text-[11px] text-white block font-black leading-none">আর্দ্রতা</span>
-                <span className="text-sm font-black text-amber-300 block mt-0.5">
-                  {toBengaliNumber(weather.humidity)}%
+                <span className="text-[10px] text-white/80 block font-bold">আর্দ্রতা</span>
+                <span className="text-xs font-black text-amber-300 block">
+                  {toBengaliNumber(data.humidity)}%
                 </span>
               </div>
             </div>
 
-            {/* Wind Speed */}
-            <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-2 sm:px-2.5 flex items-center gap-2 border border-white/10">
+            <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 flex items-center gap-2 border border-white/10">
               <div className="w-6 h-6 rounded-lg bg-teal-400/20 text-teal-300 flex items-center justify-center shrink-0">
                 <Wind className="w-3.5 h-3.5" />
               </div>
               <div className="overflow-hidden">
-                <span className="text-[11px] text-white block font-black leading-none">বাতাস</span>
-                <span className="text-sm font-black text-amber-300 block mt-0.5 truncate">
-                  {toBengaliNumber(weather.windSpeed)} কিমি/ঘ
+                <span className="text-[10px] text-white/80 block font-bold">বাতাস</span>
+                <span className="text-xs font-black text-amber-300 block truncate">
+                  {toBengaliNumber(data.windSpeed)} কিমি/ঘ
                 </span>
               </div>
             </div>
 
-            {/* Visibility / Atmosphere */}
-            <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-2 sm:px-2.5 flex items-center gap-2 border border-white/10">
+            <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 flex items-center gap-2 border border-white/10">
               <div className="w-6 h-6 rounded-lg bg-amber-400/20 text-amber-300 flex items-center justify-center shrink-0">
                 <Eye className="w-3.5 h-3.5" />
               </div>
               <div className="overflow-hidden">
-                <span className="text-[11px] text-white block font-black leading-none">দৃশ্যমানতা</span>
-                <span className="text-sm font-black text-amber-300 block mt-0.5">
-                  {toBengaliNumber(weather.visibility)} কিমি
+                <span className="text-[10px] text-white/80 block font-bold">দৃশ্যমানতা</span>
+                <span className="text-xs font-black text-amber-300 block">
+                  {toBengaliNumber(data.visibility)} কিমি
                 </span>
               </div>
             </div>

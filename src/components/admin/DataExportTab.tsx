@@ -20,9 +20,9 @@ import {
   exportDoctorsCSV, 
   exportGrievanceReportsCSV, 
   exportUsersCSV,
-  getManagedBloodDonors,
-  getManagedDoctors,
-  getGrievanceReports
+  getBloodDonors,
+  getDoctors,
+  getGrievances
 } from '../../services/adminFeaturesService';
 import { getManagedUsers } from '../../services/adminService';
 
@@ -46,19 +46,19 @@ export const DataExportTab: React.FC<DataExportTabProps> = ({ posts }) => {
   };
 
   const handleExportDonors = () => {
-    const donors = getManagedBloodDonors();
+    const donors = getBloodDonors();
     exportBloodDonorsCSV(donors);
     showFeedback('রক্তদাতাদের তালিকা');
   };
 
   const handleExportDoctors = () => {
-    const doctors = getManagedDoctors();
+    const doctors = getDoctors();
     exportDoctorsCSV(doctors);
     showFeedback('ডাক্তার ডিরেক্টরি');
   };
 
   const handleExportReports = () => {
-    const reports = getGrievanceReports();
+    const reports = getGrievances();
     exportGrievanceReportsCSV(reports);
     showFeedback('নাগরিক অভিযোগ ডাটা');
   };
@@ -253,22 +253,22 @@ export const DataExportTab: React.FC<DataExportTabProps> = ({ posts }) => {
             <div className="text-[11px] text-slate-500 font-medium">মোট বিজ্ঞাপন</div>
           </div>
           <div className="p-3 rounded-2xl bg-slate-50 border border-pink-100 text-center">
-            <div className="text-lg font-black text-slate-900">{getManagedBloodDonors().length}</div>
+            <div className="text-lg font-black text-slate-900">{getBloodDonors().length}</div>
             <div className="text-[11px] text-slate-500 font-medium">রক্তদাতা</div>
           </div>
           <div className="p-3 rounded-2xl bg-slate-50 border border-pink-100 text-center">
-            <div className="text-lg font-black text-slate-900">{getManagedDoctors().length}</div>
+            <div className="text-lg font-black text-slate-900">{getDoctors().length}</div>
             <div className="text-[11px] text-slate-500 font-medium">বিশেষজ্ঞ ডাক্তার</div>
           </div>
           <div className="p-3 rounded-2xl bg-slate-50 border border-pink-100 text-center">
-            <div className="text-lg font-black text-slate-900">{getGrievanceReports().length}</div>
+            <div className="text-lg font-black text-slate-900">{getGrievances().length}</div>
             <div className="text-[11px] text-slate-500 font-medium">নাগরিক অভিযোগ</div>
           </div>
         </div>
 
         <div className="text-center pt-2">
           <p className="text-[11px] text-slate-400">
-            উক্ত সারাংশটি সৈয়দপুর কানেক্ট অ্যাডমিন প্যানেল থেকে তৈরি হয়েছে।
+            উক্ত সারাংশটি আমার কুষ্টিয়া অ্যাডমিন প্যানেল থেকে তৈরি হয়েছে।
           </p>
         </div>
       </div>

@@ -19,7 +19,9 @@ import {
   getReviewsForTarget, 
   getUserReview, 
   submitServiceReview, 
-  formatReviewerId 
+  formatReviewerId,
+  fetchReviewsForTarget,
+  subscribeToReviews
 } from '../services/reviewService';
 
 interface PostReviewModalProps {
@@ -49,30 +51,30 @@ export const PostReviewModal: React.FC<PostReviewModalProps> = ({
   const [existingUserReview, setExistingUserReview] = useState<ServiceReview | null>(null);
 
   useEffect(() => {
-    if (post && isOpen) {
-      const targetReviews = getReviewsForTarget(post.id);
-      setReviews(targetReviews);
+    if (!post || !isOpen) return;
 
+    // Load initial reviews from Firestore for this specific post
+    fetchReviewsForTarget(post.id).then(res => {
+      setReviews(res);
       if (user) {
-        const found = getUserReview(post.id, user.uid);
+        const found = res.find(r => r.userId === user.uid);
         if (found) {
           setExistingUserReview(found);
           setSelectedRating(found.rating);
           setCommentText(found.comment || '');
-        } else {
-          setExistingUserReview(null);
-          setSelectedRating(5);
-          setCommentText('');
         }
-      } else {
-        setExistingUserReview(null);
-        setSelectedRating(5);
-        setCommentText('');
       }
+    });
 
-      setSuccessMessage(null);
-      setErrorMessage(null);
-    }
+    // Sub to updates
+    const unsub = subscribeToReviews((all) => {
+      const filtered = all.filter(r => r.targetId === post.id);
+      if (filtered.length > 0) {
+        setReviews(filtered);
+      }
+    });
+
+    return () => unsub();
   }, [post, isOpen, user]);
 
   if (!isOpen || !post) return null;

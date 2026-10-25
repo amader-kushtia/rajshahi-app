@@ -14,7 +14,7 @@ import {
   CheckCircle2, 
   Info
 } from 'lucide-react';
-import { getManagedTransport } from '../services/adminFeaturesService';
+import { getManagedTransport, subscribeToTransport } from '../services/adminFeaturesService';
 import { TransportSchedule } from '../types';
 import { TransportMapView } from '../components/TransportMapView';
 
@@ -28,10 +28,21 @@ export const TransportPage: React.FC<TransportPageProps> = ({ onBack }) => {
   const [transports, setTransports] = useState<TransportSchedule[]>([]);
 
   useEffect(() => {
-    setTransports(getManagedTransport());
-    const handleUpdate = () => setTransports(getManagedTransport());
-    window.addEventListener('rajshahi-transport-updated', handleUpdate);
-    return () => window.removeEventListener('rajshahi-transport-updated', handleUpdate);
+    const unsub = subscribeToTransport((data) => {
+      setTransports(data);
+    });
+
+    const handleEvent = (e: any) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        setTransports(e.detail);
+      }
+    };
+    window.addEventListener('kushtia-transport-updated', handleEvent);
+
+    return () => {
+      unsub();
+      window.removeEventListener('kushtia-transport-updated', handleEvent);
+    };
   }, []);
 
   const filteredTransport = transports.filter(item => {
@@ -100,7 +111,7 @@ export const TransportPage: React.FC<TransportPageProps> = ({ onBack }) => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="রুট বা ট্রেনের নাম অনুসন্ধান করুন (যেমন: নীলসাগর, চিলাহাটি, ঢাকা)..."
+            placeholder="রুট বা ট্রেনের নাম অনুসন্ধান করুন (যেমন: সুন্দরবন, মধুমতি, ঢাকা, খুলনা)..."
             className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border border-pink-200/80 text-xs font-medium focus:outline-none focus:border-pink-600 focus:bg-white"
           />
         </div>
@@ -112,7 +123,7 @@ export const TransportPage: React.FC<TransportPageProps> = ({ onBack }) => {
       {/* Info Notice */}
       <div className="p-3 bg-emerald-50/80 border border-emerald-100 rounded-xl flex items-center gap-2.5 text-xs text-emerald-900 font-medium">
         <Info className="w-4 h-4 text-emerald-700 shrink-0" />
-        <span>কুষ্টিয়া রেলওয়ে জংশন ও বিমানবন্দর উত্তরবঙ্গের প্রধান যোগাযোগ কেন্দ্র। যেকোনো টিকেটের জন্য সরাসরি কাউন্টারে কল করুন।</span>
+        <span>কুষ্টিয়া পোড়াদহ জংশন, কোর্ট স্টেশন ও মজমপুর বাস টার্মিনাল জেলার প্রধান যোগাযোগ কেন্দ্র। যেকোনো টিকেটের জন্য সরাসরি কাউন্টারে যোগাযোগ করুন।</span>
       </div>
 
       {/* Transport Cards */}

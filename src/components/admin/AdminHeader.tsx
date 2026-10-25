@@ -44,7 +44,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
             <div>
               <div className="flex items-center gap-1.5">
                 <h1 className="text-xs sm:text-base font-black text-slate-900 leading-none truncate max-w-[120px] sm:max-w-none">
-                  {(appTheme.appName && appTheme.appName !== 'আমার কুষ্টিয়া') ? appTheme.appName : 'আমার কুষ্টিয়া'}
+                  আমার কুষ্টিয়া
                 </h1>
                 <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 hidden xs:inline-block">
                   অ্যাডমিন

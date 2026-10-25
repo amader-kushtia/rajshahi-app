@@ -17,7 +17,8 @@ import {
   FileJson,
   Users,
   ShieldCheck,
-  Plus
+  Plus,
+  Share2
 } from 'lucide-react';
 import { AppThemeConfig, ThemeColorKey } from '../../types';
 import { 
@@ -50,14 +51,13 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
   currentAdminRole,
   defaultSubTab = 'general'
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'general' | 'features' | 'notice' | 'helpline' | 'theme' | 'security' | 'backup'>(defaultSubTab);
+  const [activeSubTab, setActiveSubTab] = useState<'general' | 'features' | 'notice' | 'helpline' | 'theme' | 'security' | 'backup' | 'social'>(defaultSubTab);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // General Form
   const [generalForm, setGeneralForm] = useState({
-    appName: (appTheme.appName && appTheme.appName !== 'আমার কুষ্টিয়া') ? appTheme.appName : 'আমার কুষ্টিয়া',
+    appName: 'আমার কুষ্টিয়া',
     tagline: appTheme.tagline || 'কুষ্টিয়া শহরের ডিজিটাল সিটিজেন পোর্টাল',
-    cityName: appTheme.cityName || 'কুষ্টিয়া, নীলফামারী',
+    cityName: (appTheme.cityName && !appTheme.cityName.includes('নীলফামারী') && !appTheme.cityName.includes('সৈয়দ') && !appTheme.cityName.includes('সৈয়দ')) ? appTheme.cityName : 'কুষ্টিয়া, বাংলাদেশ',
     isMemberPostingAllowed: appTheme.isMemberPostingAllowed ?? false,
     adminProfilePic: appTheme.adminProfilePic || '',
     showBalanceCard: appTheme.showBalanceCard ?? true,
@@ -195,9 +195,9 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
 
   useEffect(() => {
     setGeneralForm({
-      appName: (appTheme.appName && appTheme.appName !== 'আমার কুষ্টিয়া') ? appTheme.appName : 'আমার কুষ্টিয়া',
+      appName: 'আমার কুষ্টিয়া',
       tagline: appTheme.tagline || 'কুষ্টিয়া শহরের ডিজিটাল সিটিজেন পোর্টাল',
-      cityName: appTheme.cityName || 'কুষ্টিয়া, নীলফামারী',
+      cityName: (appTheme.cityName && !appTheme.cityName.includes('নীলফামারী') && !appTheme.cityName.includes('সৈয়দ') && !appTheme.cityName.includes('সৈয়দ')) ? appTheme.cityName : 'কুষ্টিয়া, বাংলাদেশ',
       isMemberPostingAllowed: appTheme.isMemberPostingAllowed ?? false,
       adminProfilePic: appTheme.adminProfilePic || '',
       showBalanceCard: appTheme.showBalanceCard ?? true,
@@ -287,6 +287,69 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
       actor: 'এডমিন'
     });
     showToast('জরুরি হেল্পলাইন নম্বরসমূহ সফলভাবে সংরক্ষিত হয়েছে!');
+  };
+
+  const [socialForm, setSocialForm] = useState({
+    socialFacebookPageUrl: appTheme.socialFacebookPageUrl || '',
+    isSocialFacebookPageActive: appTheme.isSocialFacebookPageActive ?? true,
+    socialFacebookGroupUrl: appTheme.socialFacebookGroupUrl || '',
+    isSocialFacebookGroupActive: appTheme.isSocialFacebookGroupActive ?? true,
+    socialYoutubeUrl: appTheme.socialYoutubeUrl || '',
+    isSocialYoutubeActive: appTheme.isSocialYoutubeActive ?? true,
+    socialTiktokUrl: appTheme.socialTiktokUrl || '',
+    isSocialTiktokActive: appTheme.isSocialTiktokActive ?? false,
+    socialInstagramUrl: appTheme.socialInstagramUrl || '',
+    isSocialInstagramActive: appTheme.isSocialInstagramActive ?? false,
+    socialTwitterUrl: appTheme.socialTwitterUrl || '',
+    isSocialTwitterActive: appTheme.isSocialTwitterActive ?? false,
+    socialWebsiteUrl: appTheme.socialWebsiteUrl || '',
+    isSocialWebsiteActive: appTheme.isSocialWebsiteActive ?? false,
+  });
+
+  useEffect(() => {
+    setSocialForm({
+      socialFacebookPageUrl: appTheme.socialFacebookPageUrl || '',
+      isSocialFacebookPageActive: appTheme.isSocialFacebookPageActive ?? true,
+      socialFacebookGroupUrl: appTheme.socialFacebookGroupUrl || '',
+      isSocialFacebookGroupActive: appTheme.isSocialFacebookGroupActive ?? true,
+      socialYoutubeUrl: appTheme.socialYoutubeUrl || '',
+      isSocialYoutubeActive: appTheme.isSocialYoutubeActive ?? true,
+      socialTiktokUrl: appTheme.socialTiktokUrl || '',
+      isSocialTiktokActive: appTheme.isSocialTiktokActive ?? false,
+      socialInstagramUrl: appTheme.socialInstagramUrl || '',
+      isSocialInstagramActive: appTheme.isSocialInstagramActive ?? false,
+      socialTwitterUrl: appTheme.socialTwitterUrl || '',
+      isSocialTwitterActive: appTheme.isSocialTwitterActive ?? false,
+      socialWebsiteUrl: appTheme.socialWebsiteUrl || '',
+      isSocialWebsiteActive: appTheme.isSocialWebsiteActive ?? false,
+    });
+  }, [
+    appTheme.socialFacebookPageUrl,
+    appTheme.isSocialFacebookPageActive,
+    appTheme.socialFacebookGroupUrl,
+    appTheme.isSocialFacebookGroupActive,
+    appTheme.socialYoutubeUrl,
+    appTheme.isSocialYoutubeActive,
+    appTheme.socialTiktokUrl,
+    appTheme.isSocialTiktokActive,
+    appTheme.socialInstagramUrl,
+    appTheme.isSocialInstagramActive,
+    appTheme.socialTwitterUrl,
+    appTheme.isSocialTwitterActive,
+    appTheme.socialWebsiteUrl,
+    appTheme.isSocialWebsiteActive,
+  ]);
+
+  const handleSaveSocial = (e: React.FormEvent) => {
+    e.preventDefault();
+    onUpdateTheme(socialForm);
+    addActivityLog({
+      type: 'theme_updated',
+      title: 'সোশ্যাল মিডিয়া লিংক ও ফুটার আপডেট',
+      description: 'সোশ্যাল মিডিয়া লিংক এবং অন/অফ স্ট্যাটাস সফলভাবে আপডেট করা হয়েছে।',
+      actor: 'এডমিন'
+    });
+    showToast('সোশ্যাল মিডিয়া সেটিংস সফলভাবে সংরক্ষিত ও লাইভ হয়েছে!');
   };
 
 
@@ -437,6 +500,18 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
         >
           <FileJson className="w-3.5 h-3.5" />
           <span>ব্যাকআপ ও রিস্টোর</span>
+        </button>
+
+        <button
+          onClick={() => setActiveSubTab('social')}
+          className={`px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+            activeSubTab === 'social'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-pink-200/80/80'
+          }`}
+        >
+          <Share2 className="w-3.5 h-3.5" />
+          <span>সোশ্যাল মিডিয়া</span>
         </button>
       </div>
 
@@ -1217,6 +1292,114 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* 7. SOCIAL MEDIA & FOOTER SETTINGS */}
+      {activeSubTab === 'social' && (
+        <div className="bg-white rounded-3xl p-5 border border-pink-200/80 shadow-xs space-y-5">
+          <div>
+            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+              <Share2 className="w-5 h-5 text-emerald-600" />
+              <span>সোশ্যাল মিডিয়া লিংক ও ফুটার ম্যানেজমেন্ট</span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-1">
+              অ্যাপের ফুটার অংশে প্রদর্শিত সোশ্যাল মিডিয়া লিংকগুলো সেট করুন এবং অন/অফ টগল দিয়ে নিয়ন্ত্রণ করুন।
+            </p>
+          </div>
+
+          <form onSubmit={handleSaveSocial} className="space-y-4">
+            {[
+              {
+                id: 'facebookPage',
+                label: 'অফিসিয়াল ফেসবুক পেজ (Facebook Page URL)',
+                urlKey: 'socialFacebookPageUrl',
+                activeKey: 'isSocialFacebookPageActive',
+                placeholder: 'https://facebook.com/amarkushtia.official',
+                color: 'bg-blue-50 text-blue-900 border-blue-200'
+              },
+              {
+                id: 'facebookGroup',
+                label: 'নাগরিক ফেসবুক গ্রুপ (Facebook Group URL)',
+                urlKey: 'socialFacebookGroupUrl',
+                activeKey: 'isSocialFacebookGroupActive',
+                placeholder: 'https://facebook.com/groups/amarkushtia',
+                color: 'bg-sky-50 text-sky-900 border-sky-200'
+              },
+              {
+                id: 'youtube',
+                label: 'ইউটিউব চ্যানেল (YouTube Channel URL)',
+                urlKey: 'socialYoutubeUrl',
+                activeKey: 'isSocialYoutubeActive',
+                placeholder: 'https://youtube.com/@amarkushtia',
+                color: 'bg-rose-50 text-rose-900 border-rose-200'
+              },
+              {
+                id: 'tiktok',
+                label: 'টিকটক একাউন্ট (TikTok URL)',
+                urlKey: 'socialTiktokUrl',
+                activeKey: 'isSocialTiktokActive',
+                placeholder: 'https://tiktok.com/@your-profile',
+                color: 'bg-slate-100 text-slate-900 border-slate-300'
+              },
+              {
+                id: 'instagram',
+                label: 'ইনস্টাগ্রাম (Instagram URL)',
+                urlKey: 'socialInstagramUrl',
+                activeKey: 'isSocialInstagramActive',
+                placeholder: 'https://instagram.com/your-profile',
+                color: 'bg-purple-50 text-purple-900 border-purple-200'
+              },
+              {
+                id: 'website',
+                label: 'অফিসিয়াল ওয়েবসাইট (Website URL)',
+                urlKey: 'socialWebsiteUrl',
+                activeKey: 'isSocialWebsiteActive',
+                placeholder: 'https://your-website.com',
+                color: 'bg-emerald-50 text-emerald-900 border-emerald-200'
+              },
+            ].map((item) => {
+              const urlVal = (socialForm as any)[item.urlKey];
+              const activeVal = (socialForm as any)[item.activeKey];
+
+              return (
+                <div key={item.id} className={`p-4 rounded-2xl border ${item.color} space-y-2 shadow-xs`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black">{item.label}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${activeVal ? 'bg-emerald-600 text-white' : 'bg-rose-500 text-white'}`}>
+                        {activeVal ? 'ON (সক্রিয়)' : 'OFF (নিষ্ক্রিয়)'}
+                      </span>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={activeVal}
+                          onChange={(e) => setSocialForm(prev => ({ ...prev, [item.activeKey]: e.target.checked }))}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-400 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                      </label>
+                    </div>
+                  </div>
+                  <input
+                    type="url"
+                    value={urlVal}
+                    onChange={(e) => setSocialForm(prev => ({ ...prev, [item.urlKey]: e.target.value }))}
+                    placeholder={item.placeholder}
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              );
+            })}
+
+            <button
+              type="submit"
+              className="px-5 py-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-2xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+            >
+              <Save className="w-4 h-4" />
+              <span>সোশ্যাল মিডিয়া সেটিংস সংরক্ষণ করুন</span>
+            </button>
+          </form>
         </div>
       )}
 

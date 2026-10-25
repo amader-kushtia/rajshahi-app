@@ -43,6 +43,7 @@ export const AdminEditPostModal: React.FC<AdminEditPostModalProps> = ({
   const [currentStep, setCurrentStep] = useState(1);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Main Form State
   const [formData, setFormData] = useState({
@@ -51,7 +52,7 @@ export const AdminEditPostModal: React.FC<AdminEditPostModalProps> = ({
     subcategory: post?.subcategory || '',
     description: post?.description || '',
     price: post?.price || '',
-    location: post?.location || 'কুষ্টিয়া, নীলফামারী',
+    location: (post?.location && !post.location.includes('নীলফামারী')) ? post.location : 'কুষ্টিয়া সদর, কুষ্টিয়া',
     contactPhone: post?.contactPhone || '01712000000',
     whatsapp: post?.whatsapp || '',
     facebook: post?.facebook || '',
@@ -67,6 +68,27 @@ export const AdminEditPostModal: React.FC<AdminEditPostModalProps> = ({
   const [menuItems, setMenuItems] = useState<{ name: string; price: string; ingredients?: string }[]>(
     post?.details?.menuItems || []
   );
+
+  React.useEffect(() => {
+    setFormData({
+      title: post?.title || '',
+      category: post?.category || ('house-rent' as PostItem['category']),
+      subcategory: post?.subcategory || '',
+      description: post?.description || '',
+      price: post?.price || '',
+      location: (post?.location && !post.location.includes('নীলফামারী')) ? post.location : 'কুষ্টিয়া সদর, কুষ্টিয়া',
+      contactPhone: post?.contactPhone || '01712000000',
+      whatsapp: post?.whatsapp || '',
+      facebook: post?.facebook || '',
+      imageUrl: post?.imageUrl || '',
+      authorName: post?.authorName || 'অ্যাডমিন মডারেশন',
+      isVerified: post?.isVerified ?? true
+    });
+    setFoodType(post?.details?.foodType || '');
+    setMenuHighlights(post?.details?.menuHighlights || '');
+    setDeliveryAvailable(post?.details?.deliveryAvailable ?? true);
+    setMenuItems(post?.details?.menuItems || []);
+  }, [post]);
 
   // New Menu Item Builder Temporary Inputs
   const [newItemName, setNewItemName] = useState('');
@@ -154,13 +176,17 @@ export const AdminEditPostModal: React.FC<AdminEditPostModalProps> = ({
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateStep(1) || !validateStep(2) || !validateStep(3)) {
       return;
     }
 
+    setIsSaving(true);
+    
+    // Create robust merged object
     const updatedPostData: Partial<PostItem> = {
+      ...(post || {}),
       title: formData.title.trim(),
       category: formData.category,
       subcategory: formData.subcategory.trim() || undefined,
@@ -178,12 +204,19 @@ export const AdminEditPostModal: React.FC<AdminEditPostModalProps> = ({
         foodType: foodType.trim() || undefined,
         menuHighlights: menuHighlights.trim() || undefined,
         deliveryAvailable: deliveryAvailable,
-        menuItems: menuItems.length > 0 ? menuItems : undefined
+        menuItems: menuItems.length > 0 ? menuItems : (post?.details?.menuItems || undefined)
       }
     };
 
-    onSave(updatedPostData);
-    onClose();
+    try {
+      await onSave(updatedPostData);
+      onClose();
+    } catch (error) {
+      console.error('Save failed:', error);
+      alert('পোস্ট সেভ করতে সমস্যা হয়েছে।');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -655,10 +688,14 @@ export const AdminEditPostModal: React.FC<AdminEditPostModalProps> = ({
             ) : (
               <button
                 type="submit"
-                className="py-2.5 px-5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-md active:scale-[0.98]"
+                disabled={isSaving}
+                className="py-2.5 px-5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-md active:scale-[0.98] disabled:opacity-50"
               >
-                <Save className="w-4 h-4" />
-                <span>{isEditing ? 'পরিবর্তন সেভ করুন' : 'পোস্ট প্রকাশ করুন'}</span>
+                {isSaving ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> <span>সেভ হচ্ছে...</span></>
+                ) : (
+                  <><Save className="w-4 h-4" /> <span>{isEditing ? 'পরিবর্তন সেভ করুন' : 'পোস্ট প্রকাশ করুন'}</span></>
+                )}
               </button>
             )}
           </div>

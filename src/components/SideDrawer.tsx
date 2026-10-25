@@ -48,7 +48,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({ isOpen, onClose, onNavig
         <div className="bg-emerald-900 p-5 pt-7 relative overflow-hidden shrink-0">
           <div className="text-[10px] font-black text-emerald-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            <span>{(themeConfig?.appName && themeConfig.appName !== 'আমার কুষ্টিয়া' && themeConfig.appName !== 'কুষ্টিয়া জেলা') ? themeConfig.appName : 'আমার কুষ্টিয়া'}</span>
+            <span>আমার কুষ্টিয়া</span>
           </div>
           <button 
             onClick={onClose}
@@ -134,15 +134,13 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({ isOpen, onClose, onNavig
               <span className="font-medium text-sm">আমাদের সেচ্ছাসেবীবৃন্দ</span>
             </button>
 
-            {isAdmin && (
-              <button onClick={() => handleNav('admin-panel')} className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-sm transition-colors shadow-md my-2 border border-emerald-700">
-                <Shield className="w-5 h-5 text-amber-300 shrink-0" />
-                <div className="text-left">
-                  <span className="block leading-tight">অ্যাডমিন কন্ট্রোল প্যানেল</span>
-                  <span className="text-[10px] text-emerald-200 font-normal block">অ্যাপ কনফিগার ও পোস্ট ম্যানেজমেন্ট</span>
-                </div>
-              </button>
-            )}
+            <button onClick={() => handleNav('admin-panel')} className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl bg-gradient-to-r from-emerald-800 to-teal-800 hover:from-emerald-900 hover:to-teal-900 text-white font-bold text-sm transition-all shadow-md my-2 border border-emerald-700/60 active:scale-98">
+              <Shield className="w-5 h-5 text-amber-300 shrink-0" />
+              <div className="text-left">
+                <span className="block leading-tight">অ্যাডমিন কন্ট্রোল প্যানেল</span>
+                <span className="text-[10px] text-emerald-200 font-normal block">অ্যাপ কনফিগার ও পোস্ট ম্যানেজমেন্ট</span>
+              </div>
+            </button>
             
             <button 
               onClick={() => {
@@ -222,7 +220,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({ isOpen, onClose, onNavig
 
             <div className="pt-3 px-3 pb-1 text-center">
               <p className="text-[10px] text-slate-400 font-semibold tracking-wide">
-                {(themeConfig?.appName && themeConfig.appName !== 'আমার কুষ্টিয়া' && themeConfig.appName !== 'কুষ্টিয়া জেলা') ? themeConfig.appName : 'আমার কুষ্টিয়া'} • {themeConfig?.cityName || 'কুষ্টিয়া'}
+                আমার কুষ্টিয়া • {themeConfig?.cityName || 'কুষ্টিয়া'}
               </p>
             </div>
           </nav>

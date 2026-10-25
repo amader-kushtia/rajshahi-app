@@ -121,7 +121,7 @@ export const AdminSidebarDrawer: React.FC<AdminSidebarDrawerProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h3 className="text-sm font-black text-slate-900">{(appTheme.appName && appTheme.appName !== 'আমার কুষ্টিয়া') ? appTheme.appName : 'আমার কুষ্টিয়া'}</h3>
+                <h3 className="text-sm font-black text-slate-900">আমার কুষ্টিয়া</h3>
                 <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 border border-emerald-200">
                   PRO
                 </span>

@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { 
   getFlashAlerts, 
-  getBloodEmergencyAlerts, 
+  getBloodAlerts, 
   playSirenTone
 } from '../services/adminFeaturesService';
 import { FlashAlert, BloodEmergencyAlert } from '../types';
@@ -32,7 +32,7 @@ export const EmergencyFlashBanner: React.FC<EmergencyFlashBannerProps> = ({
   });
 
   const [activeBlood, setActiveBlood] = useState<BloodEmergencyAlert | null>(() => {
-    const bloodAlerts = getBloodEmergencyAlerts();
+    const bloodAlerts = getBloodAlerts();
     return bloodAlerts.find(b => b.isActive) || null;
   });
 
@@ -46,7 +46,7 @@ export const EmergencyFlashBanner: React.FC<EmergencyFlashBannerProps> = ({
       setActiveAlert(current);
       if (current) setIsDismissed(false);
 
-      const bloods = getBloodEmergencyAlerts();
+      const bloods = getBloodAlerts();
       setActiveBlood(bloods.find(b => b.isActive) || null);
     };
 

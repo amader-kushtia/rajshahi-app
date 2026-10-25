@@ -1,4 +1,19 @@
 import { 
+  collection, 
+  getDocs, 
+  doc, 
+  setDoc, 
+  deleteDoc, 
+  query, 
+  orderBy, 
+  onSnapshot,
+  updateDoc,
+  serverTimestamp,
+  where,
+  limit
+} from 'firebase/firestore';
+import { db } from '../firebase';
+import { 
   FlashAlert, 
   GrievanceReport, 
   BloodEmergencyAlert, 
@@ -13,211 +28,121 @@ import { DOCTORS_LIST, EMERGENCY_HELPLINES, BLOOD_DONORS, TRANSPORT_SCHEDULES } 
 import { addActivityLog } from './adminService';
 import { postService } from './postService';
 
-// Local Storage Keys
-const FLASH_ALERTS_KEY = 'rajshahi_flash_alerts';
-const MANAGED_DOCTORS_KEY = 'rajshahi_managed_doctors';
-const MANAGED_HELPLINES_KEY = 'rajshahi_managed_helplines';
-const MANAGED_DONORS_KEY = 'rajshahi_managed_blood_donors';
-const GRIEVANCE_REPORTS_KEY = 'rajshahi_grievance_reports';
-const BLOOD_ALERTS_KEY = 'rajshahi_blood_emergency_alerts';
+// Firestore Collection Names
+const COLLECTIONS = {
+  FLASH_ALERTS: 'flash_alerts',
+  DOCTORS: 'doctors_directory',
+  HELPLINES: 'emergency_helplines',
+  BLOOD_DONORS: 'blood_donors',
+  GRIEVANCE_REPORTS: 'grievance_reports',
+  BLOOD_ALERTS: 'blood_emergency_alerts',
+  TRANSPORT: 'transport_schedules'
+};
+
 const AUTO_APPROVE_KEY = 'rajshahi_posts_auto_approve';
 
-// Initial Mock Grievance Reports for Realistic Data
-const INITIAL_REPORTS: GrievanceReport[] = [
-  {
-    id: 'rep-1',
-    title: 'রেলওয়ে কলোনির ড্রেন উপচে রাস্তায় পানি জমে আছে',
-    category: 'drainage',
-    description: 'গত ২ দিনের বৃষ্টিতে অফিসার্স কলোনি রোডের ড্রেন বন্ধ হয়ে গেছে এবং রাস্তায় নোংরা পানি জমছে। জরুরি পরিষ্কারের আবেদন।',
-    location: 'রেলওয়ে অফিসার্স কলোনি ৩নং গলি',
-    reporterName: 'কবিরুল ইসলাম',
-    reporterPhone: '01712001122',
-    isAnonymous: false,
-    imageUrl: 'https://images.unsplash.com/photo-1541888946425-d0fbb1861593?w=600&auto=format&fit=crop&q=80',
-    status: 'in_progress',
-    adminNotes: 'পৌরসভার পরিচ্ছন্নতা পরিদর্শককে দায়িত্ব দেওয়া হয়েছে। আগামীকালের মধ্যে পরিষ্কার করা হবে।',
-    createdAt: Date.now() - 1000 * 60 * 60 * 18,
-    updatedAt: Date.now() - 1000 * 60 * 60 * 2
-  },
-  {
-    id: 'rep-2',
-    title: 'বিমানবন্দর রোডের ৩টি গুরুত্বপূর্ণ সড়ক বাতি নষ্ট',
-    category: 'street-light',
-    description: 'রাত ৮টার পর বিমানবন্দর মেইন রোডের বাঁকে সম্পূর্ণ অন্ধকার থাকে। ছিনতাইয়ের ঝুঁকি বাড়ছে।',
-    location: 'বিমানবন্দর রোড, সোনালী মোড় সংলগ্ন',
-    reporterName: 'তানভীর হাসান',
-    reporterPhone: '01789334455',
-    isAnonymous: false,
-    status: 'pending',
-    createdAt: Date.now() - 1000 * 60 * 60 * 6
-  },
-  {
-    id: 'rep-3',
-    title: 'নয়া বাজারে অবৈধ বর্জ্যের স্তূপ অপসারণ প্রয়োজন',
-    category: 'waste',
-    description: 'নয়া বাজার কাঁচাবাজারের পেছনে ময়লা জমে দুর্গন্ধ ছড়াচ্ছে এবং পথচারীদের চলাচলে সমস্যা হচ্ছে।',
-    location: 'নয়া বাজার কাঁচাবাজার সংলগ্ন',
-    reporterName: 'নজরুল ইসলাম',
-    isAnonymous: true,
-    status: 'resolved',
-    adminNotes: 'পৌরসভার ট্রাকে বর্জ্য অপসারণ করে ব্লিচিং পাউডার ছিটানো সম্পন্ন হয়েছে।',
-    createdAt: Date.now() - 1000 * 60 * 60 * 48,
-    updatedAt: Date.now() - 1000 * 60 * 60 * 12
-  }
-];
-
-// Initial Flash Alerts
-const INITIAL_FLASH_ALERTS: FlashAlert[] = [
-  {
-    id: 'flash-1',
-    title: 'পৌর এলাকায় আগামীকাল জরুরি বিদ্যুৎ মেইনটেন্যান্স',
-    message: 'কুষ্টিয়া গ্রিড উপকেন্দ্রের বার্ষিক রক্ষণাবেক্ষণ কাজের জন্য আগামীকাল সকাল ৮টা থেকে দুপুর ২টা পর্যন্ত মুন্সিপাড়া ও বাবুপাড়া এলাকায় বিদ্যুৎ সরবরাহ বন্ধ থাকবে।',
-    type: 'electricity',
-    isActive: true,
-    actionText: 'জরুরি হেল্পলাইন',
-    actionLink: 'emergency',
-    createdAt: Date.now() - 1000 * 60 * 60 * 5
-  },
-  {
-    id: 'flash-2',
-    title: 'আবহাওয়া বার্তা: ভারী বৃষ্টিপাত ও বজ্রপাতের সতর্কতা',
-    message: 'রংপুর বিভাগসহ কুষ্টিয়া অঞ্চলে আগামী ২৪ ঘণ্টায় দমকা হাওয়াসহ ভারী বর্ষণের সম্ভাবনা রয়েছে। খোলা মাঠে অবস্থান পরিহার করুন।',
-    type: 'weather',
-    isActive: false,
-    createdAt: Date.now() - 1000 * 60 * 60 * 24
-  }
-];
-
-// Initial Blood Emergency Alerts
-const INITIAL_BLOOD_ALERTS: BloodEmergencyAlert[] = [
-  {
-    id: 'blood-alert-1',
-    patientName: 'মোছাঃ রোকেয়া বেগম (৫৫)',
-    bloodGroup: 'B+',
-    bagsNeeded: 2,
-    hospital: 'কুষ্টিয়া ১০০ শয্যা সরকারি হাসপাতাল',
-    reason: 'জরুরি সার্জারি অপারেশন',
-    urgency: 'জরুরি (১ ঘণ্টার মধ্যে)',
-    contactPhone: '01712998877',
-    alternatePhone: '01712998800',
-    location: 'হাসপাতাল রোড, সার্জারি ওয়ার্ড',
-    createdAt: Date.now() - 1000 * 60 * 45,
-    isActive: true
-  }
-];
+// In-memory cache for synchronous access
+let cachedDoctors: Doctor[] = [];
+let cachedBloodDonors: BloodDonor[] = [];
+let cachedBloodAlerts: BloodEmergencyAlert[] = [];
+let cachedGrievances: GrievanceReport[] = [];
+let cachedHelplines: EmergencyHelpline[] = [];
+let cachedTransport: TransportSchedule[] = [];
 
 // -------------------------------------------------------------
 // 1. FLASH ALERT SYSTEM
 // -------------------------------------------------------------
-export function getFlashAlerts(): FlashAlert[] {
+export async function fetchFlashAlerts(): Promise<FlashAlert[]> {
   try {
-    const data = localStorage.getItem(FLASH_ALERTS_KEY);
-    return data ? JSON.parse(data) : INITIAL_FLASH_ALERTS;
+    const q = query(collection(db, COLLECTIONS.FLASH_ALERTS), orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
+    const alerts: FlashAlert[] = [];
+    snap.forEach(d => alerts.push({ id: d.id, ...d.data() } as FlashAlert));
+    return alerts.length > 0 ? alerts : [];
   } catch (e) {
-    return INITIAL_FLASH_ALERTS;
+    console.error('Error fetching flash alerts:', e);
+    return [];
   }
 }
 
-export function getActiveFlashAlert(): FlashAlert | null {
-  const alerts = getFlashAlerts();
-  return alerts.find(a => a.isActive) || null;
+let cachedFlashAlerts: FlashAlert[] = [];
+
+// Initialize cache
+if (typeof window !== 'undefined') {
+  fetchFlashAlerts().then(alerts => {
+    cachedFlashAlerts = alerts;
+  });
 }
 
-export function saveFlashAlert(alertData: Partial<FlashAlert>): FlashAlert {
-  const list = getFlashAlerts();
-  let updatedAlert: FlashAlert;
+export function getFlashAlerts(): FlashAlert[] {
+  return cachedFlashAlerts;
+}
 
-  if (alertData.id) {
-    updatedAlert = {
-      ...list.find(a => a.id === alertData.id)!,
-      ...alertData,
-      createdAt: alertData.createdAt || Date.now()
-    };
-    const newList = list.map(a => a.id === alertData.id ? updatedAlert : a);
-    localStorage.setItem(FLASH_ALERTS_KEY, JSON.stringify(newList));
-  } else {
-    updatedAlert = {
-      id: `alert-${Date.now()}`,
-      title: alertData.title || 'জরুরি নোটিশ',
-      message: alertData.message || '',
-      type: alertData.type || 'emergency',
-      isActive: alertData.isActive ?? true,
-      actionText: alertData.actionText,
-      actionLink: alertData.actionLink,
-      createdAt: Date.now()
-    };
-    // If activating new alert, optionally set other active alerts to false
-    if (updatedAlert.isActive) {
-      list.forEach(a => a.isActive = false);
+export function subscribeToFlashAlerts(callback: (alerts: FlashAlert[]) => void) {
+  const q = query(collection(db, COLLECTIONS.FLASH_ALERTS), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, (snap) => {
+    const alerts: FlashAlert[] = [];
+    snap.forEach(d => alerts.push({ id: d.id, ...d.data() } as FlashAlert));
+    cachedFlashAlerts = alerts;
+    callback(alerts);
+    window.dispatchEvent(new CustomEvent('kushtia-flash-alert-updated', { detail: alerts }));
+  });
+}
+
+export async function saveFlashAlert(alertData: Partial<FlashAlert>): Promise<FlashAlert> {
+  const id = alertData.id || `alert-${Date.now()}`;
+  const newAlert = {
+    ...alertData,
+    id,
+    createdAt: alertData.createdAt || Date.now()
+  } as FlashAlert;
+
+  if (newAlert.isActive) {
+    // Optionally deactivate others
+    const alerts = await fetchFlashAlerts();
+    for (const a of alerts) {
+      if (a.id !== id && a.isActive) {
+        await updateDoc(doc(db, COLLECTIONS.FLASH_ALERTS, a.id), { isActive: false });
+      }
     }
-    const newList = [updatedAlert, ...list];
-    localStorage.setItem(FLASH_ALERTS_KEY, JSON.stringify(newList));
   }
 
-  window.dispatchEvent(new Event('rajshahi-flash-alert-updated'));
+  await setDoc(doc(db, COLLECTIONS.FLASH_ALERTS, id), newAlert);
+  
   addActivityLog({
     type: 'alert_broadcast',
     title: 'ফ্ল্যাশ নোটিশ আপডেট',
-    description: `"${updatedAlert.title}" ফ্ল্যাশ নোটিশ সংরক্ষিত হয়েছে।`,
+    description: `"${newAlert.title}" ফ্ল্যাশ নোটিশ সংরক্ষিত হয়েছে।`,
     actor: 'অ্যাডমিন'
   });
 
-  return updatedAlert;
+  return newAlert;
 }
 
-export function toggleFlashAlertActive(id: string): boolean {
-  const list = getFlashAlerts();
-  let newStatus = false;
-  const updated = list.map(a => {
-    if (a.id === id) {
-      newStatus = !a.isActive;
-      return { ...a, isActive: newStatus };
+export async function toggleFlashAlertActive(id: string, currentStatus?: boolean): Promise<boolean> {
+  let newStatus: boolean;
+  if (currentStatus !== undefined) {
+    newStatus = !currentStatus;
+  } else {
+    const alert = cachedFlashAlerts.find(a => a.id === id);
+    newStatus = alert ? !alert.isActive : true;
+  }
+  
+  if (newStatus) {
+    const alerts = await fetchFlashAlerts();
+    for (const a of alerts) {
+      if (a.id !== id && a.isActive) {
+        await updateDoc(doc(db, COLLECTIONS.FLASH_ALERTS, a.id), { isActive: false });
+      }
     }
-    // Only one active at a time for clarity
-    return newStatus ? { ...a, isActive: false } : a;
-  });
-  localStorage.setItem(FLASH_ALERTS_KEY, JSON.stringify(updated));
-  window.dispatchEvent(new Event('rajshahi-flash-alert-updated'));
+  }
+
+  await updateDoc(doc(db, COLLECTIONS.FLASH_ALERTS, id), { isActive: newStatus });
   return newStatus;
 }
 
-/**
- * Web Audio Siren Generator for Emergency Flash Broadcast
- */
-export function playSirenTone(): void {
-  try {
-    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sawtooth';
-    const now = ctx.currentTime;
-    osc.frequency.setValueAtTime(440, now);
-    osc.frequency.linearRampToValueAtTime(880, now + 0.35);
-    osc.frequency.linearRampToValueAtTime(440, now + 0.7);
-    osc.frequency.linearRampToValueAtTime(880, now + 1.05);
-    osc.frequency.linearRampToValueAtTime(440, now + 1.4);
-    osc.frequency.linearRampToValueAtTime(880, now + 1.75);
-
-    gain.gain.setValueAtTime(0.15, now);
-    gain.gain.linearRampToValueAtTime(0.01, now + 2.0);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start(now);
-    osc.stop(now + 2.1);
-  } catch (err) {
-    console.error('Siren Audio error:', err);
-  }
-}
-
-export function deleteFlashAlert(id: string): void {
-  const list = getFlashAlerts().filter(a => a.id !== id);
-  localStorage.setItem(FLASH_ALERTS_KEY, JSON.stringify(list));
-  window.dispatchEvent(new Event('rajshahi-flash-alert-updated'));
+export async function deleteFlashAlert(id: string): Promise<void> {
+  await deleteDoc(doc(db, COLLECTIONS.FLASH_ALERTS, id));
 }
 
 // -------------------------------------------------------------
@@ -226,7 +151,7 @@ export function deleteFlashAlert(id: string): void {
 export function getAutoApproveSetting(): boolean {
   try {
     const val = localStorage.getItem(AUTO_APPROVE_KEY);
-    return val === 'true'; // Default is false: posts must be approved by admin before going public
+    return val === 'true'; 
   } catch {
     return false;
   }
@@ -239,7 +164,8 @@ export function setAutoApproveSetting(enabled: boolean): void {
 export async function approvePost(postId: string): Promise<void> {
   await postService.updatePost(postId, {
     status: 'approved',
-    isVerified: true
+    isVerified: true,
+    approvedAt: Date.now()
   });
 
   addActivityLog({
@@ -267,45 +193,48 @@ export async function rejectPost(postId: string, reason?: string): Promise<void>
 // -------------------------------------------------------------
 // 3. DOCTORS & EMERGENCY DIRECTORY MANAGEMENT
 // -------------------------------------------------------------
-export function getManagedDoctors(): Doctor[] {
+export async function getManagedDoctors(): Promise<Doctor[]> {
   try {
-    const data = localStorage.getItem(MANAGED_DOCTORS_KEY);
-    return data ? JSON.parse(data) : DOCTORS_LIST;
+    const snap = await getDocs(collection(db, COLLECTIONS.DOCTORS));
+    const doctors: Doctor[] = [];
+    snap.forEach(d => doctors.push({ id: d.id, ...d.data() } as Doctor));
+    
+    if (doctors.length === 0) {
+      // Seed initial data
+      for (const docItem of DOCTORS_LIST) {
+        await setDoc(doc(db, COLLECTIONS.DOCTORS, docItem.id), docItem);
+        doctors.push(docItem);
+      }
+    }
+    return doctors;
   } catch {
     return DOCTORS_LIST;
   }
 }
 
-export function saveDoctor(doctorData: Partial<Doctor>): Doctor {
-  const list = getManagedDoctors();
-  let updatedDoctor: Doctor;
+export function getDoctors(): Doctor[] {
+  return cachedDoctors.length > 0 ? cachedDoctors : DOCTORS_LIST;
+}
 
-  if (doctorData.id) {
-    updatedDoctor = {
-      ...list.find(d => d.id === doctorData.id)!,
-      ...doctorData
-    } as Doctor;
-    const newList = list.map(d => d.id === doctorData.id ? updatedDoctor : d);
-    localStorage.setItem(MANAGED_DOCTORS_KEY, JSON.stringify(newList));
-  } else {
-    updatedDoctor = {
-      id: `doc-${Date.now()}`,
-      name: doctorData.name || 'ডাঃ নতুন ডাক্তার',
-      speciality: doctorData.speciality || 'জেনারেল ফিজিশিয়ান',
-      degree: doctorData.degree || 'এমবিবিএস',
-      hospital: doctorData.hospital || 'কুষ্টিয়া হাসপাতাল',
-      chamber: doctorData.chamber || 'কুষ্টিয়া',
-      visitingHours: doctorData.visitingHours || 'বিকাল ৫:০০ - রাত ৮:০০',
-      serialNumber: doctorData.serialNumber || '01712000000',
-      fee: doctorData.fee || '৫০০ ৳',
-      availableDays: doctorData.availableDays || 'প্রতিদিন',
-      isVerified: doctorData.isVerified ?? true
-    };
-    const newList = [updatedDoctor, ...list];
-    localStorage.setItem(MANAGED_DOCTORS_KEY, JSON.stringify(newList));
-  }
+export function subscribeToDoctors(callback: (doctors: Doctor[]) => void) {
+  return onSnapshot(collection(db, COLLECTIONS.DOCTORS), (snap) => {
+    const doctors: Doctor[] = [];
+    snap.forEach(d => doctors.push({ id: d.id, ...d.data() } as Doctor));
+    cachedDoctors = doctors;
+    callback(doctors);
+  });
+}
 
-  window.dispatchEvent(new Event('rajshahi-directory-updated'));
+export async function saveDoctor(doctorData: Partial<Doctor>): Promise<Doctor> {
+  const id = doctorData.id || `doc-${Date.now()}`;
+  const updatedDoctor = {
+    ...doctorData,
+    id,
+    isVerified: doctorData.isVerified ?? true
+  } as Doctor;
+
+  await setDoc(doc(db, COLLECTIONS.DOCTORS, id), updatedDoctor);
+
   addActivityLog({
     type: 'doctor_updated',
     title: 'ডাক্তার প্রোফাইল আপডেট',
@@ -316,48 +245,50 @@ export function saveDoctor(doctorData: Partial<Doctor>): Doctor {
   return updatedDoctor;
 }
 
-export function deleteDoctor(id: string): void {
-  const list = getManagedDoctors().filter(d => d.id !== id);
-  localStorage.setItem(MANAGED_DOCTORS_KEY, JSON.stringify(list));
-  window.dispatchEvent(new Event('rajshahi-directory-updated'));
+export async function deleteDoctor(id: string): Promise<void> {
+  await deleteDoc(doc(db, COLLECTIONS.DOCTORS, id));
 }
 
-export function getManagedHelplines(): EmergencyHelpline[] {
+export async function getManagedHelplines(): Promise<EmergencyHelpline[]> {
   try {
-    const data = localStorage.getItem(MANAGED_HELPLINES_KEY);
-    return data ? JSON.parse(data) : EMERGENCY_HELPLINES;
+    const snap = await getDocs(collection(db, COLLECTIONS.HELPLINES));
+    const helplines: EmergencyHelpline[] = [];
+    snap.forEach(d => helplines.push({ id: d.id, ...d.data() } as EmergencyHelpline));
+    
+    if (helplines.length === 0) {
+      for (const item of EMERGENCY_HELPLINES) {
+        await setDoc(doc(db, COLLECTIONS.HELPLINES, item.id), item);
+        helplines.push(item);
+      }
+    }
+    return helplines;
   } catch {
     return EMERGENCY_HELPLINES;
   }
 }
 
-export function saveHelpline(helplineData: Partial<EmergencyHelpline>): EmergencyHelpline {
-  const list = getManagedHelplines();
-  let updatedHelpline: EmergencyHelpline;
+export function getHelplines(): EmergencyHelpline[] {
+  return cachedHelplines.length > 0 ? cachedHelplines : EMERGENCY_HELPLINES;
+}
 
-  if (helplineData.id) {
-    updatedHelpline = {
-      ...list.find(h => h.id === helplineData.id)!,
-      ...helplineData
-    } as EmergencyHelpline;
-    const newList = list.map(h => h.id === helplineData.id ? updatedHelpline : h);
-    localStorage.setItem(MANAGED_HELPLINES_KEY, JSON.stringify(newList));
-  } else {
-    updatedHelpline = {
-      id: `em-${Date.now()}`,
-      title: helplineData.title || 'জরুরি সেবা',
-      dept: helplineData.dept || 'কুষ্টিয়া প্রশাসন',
-      number: helplineData.number || '999',
-      alternateNumber: helplineData.alternateNumber || '',
-      address: helplineData.address || 'কুষ্টিয়া',
-      availableHours: helplineData.availableHours || '২৪ ঘণ্টা',
-      iconName: helplineData.iconName || 'ShieldAlert'
-    };
-    const newList = [updatedHelpline, ...list];
-    localStorage.setItem(MANAGED_HELPLINES_KEY, JSON.stringify(newList));
-  }
+export function subscribeToHelplines(callback: (helplines: EmergencyHelpline[]) => void) {
+  return onSnapshot(collection(db, COLLECTIONS.HELPLINES), (snap) => {
+    const helplines: EmergencyHelpline[] = [];
+    snap.forEach(d => helplines.push({ id: d.id, ...d.data() } as EmergencyHelpline));
+    cachedHelplines = helplines;
+    callback(helplines);
+  });
+}
 
-  window.dispatchEvent(new Event('rajshahi-directory-updated'));
+export async function saveHelpline(helplineData: Partial<EmergencyHelpline>): Promise<EmergencyHelpline> {
+  const id = helplineData.id || `em-${Date.now()}`;
+  const updatedHelpline = {
+    ...helplineData,
+    id
+  } as EmergencyHelpline;
+
+  await setDoc(doc(db, COLLECTIONS.HELPLINES, id), updatedHelpline);
+
   addActivityLog({
     type: 'helpline_updated',
     title: 'হেল্পলাইন আপডেট',
@@ -368,156 +299,172 @@ export function saveHelpline(helplineData: Partial<EmergencyHelpline>): Emergenc
   return updatedHelpline;
 }
 
-export function deleteHelpline(id: string): void {
-  const list = getManagedHelplines().filter(h => h.id !== id);
-  localStorage.setItem(MANAGED_HELPLINES_KEY, JSON.stringify(list));
-  window.dispatchEvent(new Event('rajshahi-directory-updated'));
+export async function deleteHelpline(id: string): Promise<void> {
+  await deleteDoc(doc(db, COLLECTIONS.HELPLINES, id));
 }
 
 // -------------------------------------------------------------
 // 4. GRIEVANCE & CITIZEN REPORTS DESK
 // -------------------------------------------------------------
-export function getGrievanceReports(): GrievanceReport[] {
+export async function getGrievanceReports(): Promise<GrievanceReport[]> {
   try {
-    const data = localStorage.getItem(GRIEVANCE_REPORTS_KEY);
-    return data ? JSON.parse(data) : INITIAL_REPORTS;
+    const q = query(collection(db, COLLECTIONS.GRIEVANCE_REPORTS), orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
+    const reports: GrievanceReport[] = [];
+    snap.forEach(d => reports.push({ id: d.id, ...d.data() } as GrievanceReport));
+    return reports;
   } catch {
-    return INITIAL_REPORTS;
+    return [];
   }
 }
 
-export function createGrievanceReport(report: Omit<GrievanceReport, 'id' | 'createdAt' | 'status'>): GrievanceReport {
-  const list = getGrievanceReports();
+export function getGrievances(): GrievanceReport[] {
+  return cachedGrievances;
+}
+
+export function subscribeToGrievances(callback: (reports: GrievanceReport[]) => void) {
+  const q = query(collection(db, COLLECTIONS.GRIEVANCE_REPORTS), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, (snap) => {
+    const reports: GrievanceReport[] = [];
+    snap.forEach(d => reports.push({ id: d.id, ...d.data() } as GrievanceReport));
+    cachedGrievances = reports;
+    callback(reports);
+  });
+}
+
+export async function createGrievanceReport(report: Omit<GrievanceReport, 'id' | 'createdAt' | 'status'>): Promise<GrievanceReport> {
+  const id = `rep-${Date.now()}`;
   const newReport: GrievanceReport = {
     ...report,
-    id: `rep-${Date.now()}`,
+    id,
     status: 'pending',
     createdAt: Date.now()
   };
-  const newList = [newReport, ...list];
-  localStorage.setItem(GRIEVANCE_REPORTS_KEY, JSON.stringify(newList));
-  window.dispatchEvent(new Event('rajshahi-grievance-updated'));
+  await setDoc(doc(db, COLLECTIONS.GRIEVANCE_REPORTS, id), newReport);
   return newReport;
 }
 
-export function updateGrievanceStatus(
+export async function updateGrievanceStatus(
   id: string, 
   status: GrievanceReport['status'], 
   adminNotes?: string
-): GrievanceReport | null {
-  const list = getGrievanceReports();
-  const target = list.find(r => r.id === id);
-  if (!target) return null;
-
-  const updated: GrievanceReport = {
-    ...target,
+): Promise<void> {
+  await updateDoc(doc(db, COLLECTIONS.GRIEVANCE_REPORTS, id), {
     status,
-    adminNotes: adminNotes !== undefined ? adminNotes : target.adminNotes,
+    adminNotes: adminNotes ?? null,
     updatedAt: Date.now()
-  };
-
-  const newList = list.map(r => r.id === id ? updated : r);
-  localStorage.setItem(GRIEVANCE_REPORTS_KEY, JSON.stringify(newList));
-  window.dispatchEvent(new Event('rajshahi-grievance-updated'));
+  });
 
   addActivityLog({
     type: 'report_status_changed',
     title: 'নাগরিক অভিযোগ আপডেট',
-    description: `"${target.title}" অভিযোগের স্ট্যাটাস পরিবর্তিত হয়েছে (${status})।`,
+    description: `অভিযোগ আইডি #${id} এর স্ট্যাটাস পরিবর্তিত হয়েছে (${status})।`,
     actor: 'অ্যাডমিন'
   });
-
-  return updated;
 }
 
-export function deleteGrievanceReport(id: string): void {
-  const list = getGrievanceReports().filter(r => r.id !== id);
-  localStorage.setItem(GRIEVANCE_REPORTS_KEY, JSON.stringify(list));
-  window.dispatchEvent(new Event('rajshahi-grievance-updated'));
+export async function deleteGrievanceReport(id: string): Promise<void> {
+  await deleteDoc(doc(db, COLLECTIONS.GRIEVANCE_REPORTS, id));
 }
 
 // -------------------------------------------------------------
 // 5. BLOOD DONORS & EMERGENCY BLOOD ALERT DESK
 // -------------------------------------------------------------
-export function getManagedBloodDonors(): BloodDonor[] {
+export async function getManagedBloodDonors(): Promise<BloodDonor[]> {
   try {
-    const data = localStorage.getItem(MANAGED_DONORS_KEY);
-    return data ? JSON.parse(data) : BLOOD_DONORS;
+    const snap = await getDocs(collection(db, COLLECTIONS.BLOOD_DONORS));
+    const donors: BloodDonor[] = [];
+    snap.forEach(d => donors.push({ id: d.id, ...d.data() } as BloodDonor));
+    
+    if (donors.length === 0) {
+      for (const d of BLOOD_DONORS) {
+        await setDoc(doc(db, COLLECTIONS.BLOOD_DONORS, d.id), d);
+        donors.push(d);
+      }
+    }
+    return donors;
   } catch {
     return BLOOD_DONORS;
   }
 }
 
-export function saveBloodDonor(donorData: Partial<BloodDonor>): BloodDonor {
-  const list = getManagedBloodDonors();
-  let updatedDonor: BloodDonor;
+export function getBloodDonors(): BloodDonor[] {
+  return cachedBloodDonors.length > 0 ? cachedBloodDonors : BLOOD_DONORS;
+}
 
-  if (donorData.id) {
-    updatedDonor = {
-      ...list.find(d => d.id === donorData.id)!,
-      ...donorData
-    } as BloodDonor;
-    const newList = list.map(d => d.id === donorData.id ? updatedDonor : d);
-    localStorage.setItem(MANAGED_DONORS_KEY, JSON.stringify(newList));
-  } else {
-    updatedDonor = {
-      id: `blood-${Date.now()}`,
-      name: donorData.name || 'স্বেচ্ছাসেবী রক্তদাতা',
-      bloodGroup: donorData.bloodGroup || 'O+',
-      location: donorData.location || 'কুষ্টিয়া',
-      phone: donorData.phone || '01712000000',
-      lastDonationDate: donorData.lastDonationDate || '১ মাস পূর্বে',
-      isAvailable: donorData.isAvailable ?? true,
-      totalDonations: donorData.totalDonations || 1
-    };
-    const newList = [updatedDonor, ...list];
-    localStorage.setItem(MANAGED_DONORS_KEY, JSON.stringify(newList));
-  }
+export function subscribeToBloodDonors(callback: (donors: BloodDonor[]) => void) {
+  return onSnapshot(collection(db, COLLECTIONS.BLOOD_DONORS), (snap) => {
+    const donors: BloodDonor[] = [];
+    snap.forEach(d => donors.push({ id: d.id, ...d.data() } as BloodDonor));
+    cachedBloodDonors = donors;
+    callback(donors);
+  });
+}
 
-  window.dispatchEvent(new Event('rajshahi-blood-updated'));
+export async function saveBloodDonor(donorData: Partial<BloodDonor>): Promise<BloodDonor> {
+  const id = donorData.id || `blood-${Date.now()}`;
+  const updatedDonor = {
+    ...donorData,
+    id,
+    isAvailable: donorData.isAvailable ?? true,
+    totalDonations: donorData.totalDonations || 0
+  } as BloodDonor;
+
+  await setDoc(doc(db, COLLECTIONS.BLOOD_DONORS, id), updatedDonor);
   return updatedDonor;
 }
 
-export function toggleBloodDonorAvailability(id: string): boolean {
-  const list = getManagedBloodDonors();
-  let status = false;
-  const updated = list.map(d => {
-    if (d.id === id) {
-      status = !d.isAvailable;
-      return { ...d, isAvailable: status };
-    }
-    return d;
-  });
-  localStorage.setItem(MANAGED_DONORS_KEY, JSON.stringify(updated));
-  window.dispatchEvent(new Event('rajshahi-blood-updated'));
-  return status;
+export async function toggleBloodDonorAvailability(id: string, currentStatus?: boolean): Promise<boolean> {
+  let newStatus: boolean;
+  if (currentStatus !== undefined) {
+    newStatus = !currentStatus;
+  } else {
+    const donor = cachedBloodDonors.find(d => d.id === id);
+    newStatus = donor ? !donor.isAvailable : false;
+  }
+  await updateDoc(doc(db, COLLECTIONS.BLOOD_DONORS, id), { isAvailable: newStatus });
+  return newStatus;
 }
 
-export function deleteBloodDonor(id: string): void {
-  const list = getManagedBloodDonors().filter(d => d.id !== id);
-  localStorage.setItem(MANAGED_DONORS_KEY, JSON.stringify(list));
-  window.dispatchEvent(new Event('rajshahi-blood-updated'));
+export async function deleteBloodDonor(id: string): Promise<void> {
+  await deleteDoc(doc(db, COLLECTIONS.BLOOD_DONORS, id));
 }
 
-export function getBloodEmergencyAlerts(): BloodEmergencyAlert[] {
+export async function getBloodEmergencyAlerts(): Promise<BloodEmergencyAlert[]> {
   try {
-    const data = localStorage.getItem(BLOOD_ALERTS_KEY);
-    return data ? JSON.parse(data) : INITIAL_BLOOD_ALERTS;
+    const q = query(collection(db, COLLECTIONS.BLOOD_ALERTS), orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
+    const alerts: BloodEmergencyAlert[] = [];
+    snap.forEach(d => alerts.push({ id: d.id, ...d.data() } as BloodEmergencyAlert));
+    return alerts;
   } catch {
-    return INITIAL_BLOOD_ALERTS;
+    return [];
   }
 }
 
-export function createBloodEmergencyAlert(data: Omit<BloodEmergencyAlert, 'id' | 'createdAt'>): BloodEmergencyAlert {
-  const list = getBloodEmergencyAlerts();
+export function getBloodAlerts(): BloodEmergencyAlert[] {
+  return cachedBloodAlerts;
+}
+
+export function subscribeToBloodAlerts(callback: (alerts: BloodEmergencyAlert[]) => void) {
+  const q = query(collection(db, COLLECTIONS.BLOOD_ALERTS), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, (snap) => {
+    const alerts: BloodEmergencyAlert[] = [];
+    snap.forEach(d => alerts.push({ id: d.id, ...d.data() } as BloodEmergencyAlert));
+    cachedBloodAlerts = alerts;
+    callback(alerts);
+    window.dispatchEvent(new CustomEvent('kushtia-blood-updated', { detail: alerts }));
+  });
+}
+
+export async function createBloodEmergencyAlert(data: Omit<BloodEmergencyAlert, 'id' | 'createdAt'>): Promise<BloodEmergencyAlert> {
+  const id = `blood-alert-${Date.now()}`;
   const newAlert: BloodEmergencyAlert = {
     ...data,
-    id: `blood-alert-${Date.now()}`,
+    id,
     createdAt: Date.now()
   };
-  const newList = [newAlert, ...list];
-  localStorage.setItem(BLOOD_ALERTS_KEY, JSON.stringify(newList));
-  window.dispatchEvent(new Event('rajshahi-blood-alert-updated'));
+  await setDoc(doc(db, COLLECTIONS.BLOOD_ALERTS, id), newAlert);
 
   addActivityLog({
     type: 'blood_alert_created',
@@ -529,32 +476,318 @@ export function createBloodEmergencyAlert(data: Omit<BloodEmergencyAlert, 'id' |
   return newAlert;
 }
 
-export function toggleBloodAlertStatus(id: string): boolean {
-  const list = getBloodEmergencyAlerts();
-  let status = false;
-  const updated = list.map(a => {
-    if (a.id === id) {
-      status = !a.isActive;
-      return { ...a, isActive: status };
-    }
-    return a;
-  });
-  localStorage.setItem(BLOOD_ALERTS_KEY, JSON.stringify(updated));
-  window.dispatchEvent(new Event('rajshahi-blood-alert-updated'));
-  return status;
+export async function toggleBloodAlertStatus(id: string, currentStatus?: boolean): Promise<boolean> {
+  let newStatus: boolean;
+  if (currentStatus !== undefined) {
+    newStatus = !currentStatus;
+  } else {
+    const alert = cachedBloodAlerts.find(a => a.id === id);
+    newStatus = alert ? !alert.isActive : false;
+  }
+  await updateDoc(doc(db, COLLECTIONS.BLOOD_ALERTS, id), { isActive: newStatus });
+  return newStatus;
 }
 
-export function deleteBloodEmergencyAlert(id: string): void {
-  const list = getBloodEmergencyAlerts().filter(a => a.id !== id);
-  localStorage.setItem(BLOOD_ALERTS_KEY, JSON.stringify(list));
-  window.dispatchEvent(new Event('rajshahi-blood-alert-updated'));
+export async function deleteBloodEmergencyAlert(id: string): Promise<void> {
+  await deleteDoc(doc(db, COLLECTIONS.BLOOD_ALERTS, id));
 }
 
 // -------------------------------------------------------------
-// 6. CSV & SPREADSHEET EXPORT ENGINE (EXCEL COMPATIBLE UTF-8 BOM)
+// TRANSPORT SCHEDULE MANAGEMENT SERVICE
+// -------------------------------------------------------------
+const TRANSPORT_STORAGE_KEY = 'kushtia_transport_schedules_cache_v2';
+const TRANSPORT_DELETED_IDS_KEY = 'kushtia_transport_deleted_ids_v2';
+const TRANSPORT_INITIALIZED_KEY = 'kushtia_transport_initialized_flag_v2';
+
+const transportSubscribers = new Set<(transports: TransportSchedule[]) => void>();
+
+export function getDeletedTransportIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(TRANSPORT_DELETED_IDS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return new Set(parsed);
+    }
+  } catch (e) {
+    console.warn('Could not read deleted transport IDs', e);
+  }
+  return new Set();
+}
+
+export function recordDeletedTransportId(id: string) {
+  try {
+    const set = getDeletedTransportIds();
+    set.add(id);
+    localStorage.setItem(TRANSPORT_DELETED_IDS_KEY, JSON.stringify(Array.from(set)));
+  } catch (e) {
+    console.warn('Could not record deleted transport ID', e);
+  }
+}
+
+export function recordDeletedTransportIds(ids: string[]) {
+  try {
+    const set = getDeletedTransportIds();
+    ids.forEach(id => set.add(id));
+    localStorage.setItem(TRANSPORT_DELETED_IDS_KEY, JSON.stringify(Array.from(set)));
+  } catch (e) {
+    console.warn('Could not record deleted transport IDs', e);
+  }
+}
+
+export function isTransportInitialized(): boolean {
+  try {
+    return localStorage.getItem(TRANSPORT_INITIALIZED_KEY) === 'true';
+  } catch (_) {
+    return false;
+  }
+}
+
+export function markTransportInitialized() {
+  try {
+    localStorage.setItem(TRANSPORT_INITIALIZED_KEY, 'true');
+  } catch (_) {}
+}
+
+function notifyTransportSubscribers(data: TransportSchedule[]) {
+  transportSubscribers.forEach(cb => {
+    try { cb(data); } catch (_) {}
+  });
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('kushtia-transport-updated', { detail: data }));
+  }
+}
+
+export async function getManagedTransport(): Promise<TransportSchedule[]> {
+  const deletedIds = getDeletedTransportIds();
+  const initialized = isTransportInitialized();
+
+  try {
+    const snap = await getDocs(collection(db, COLLECTIONS.TRANSPORT));
+    const transports: TransportSchedule[] = [];
+    snap.forEach(d => {
+      if (!deletedIds.has(d.id)) {
+        transports.push({ id: d.id, ...d.data() } as TransportSchedule);
+      }
+    });
+    
+    // Only seed ONCE if the system has NEVER been initialized and Firestore is completely empty
+    // If the user has initialized or cleared all items, transports.length === 0 is INTENTIONAL and must STAY EMPTY!
+    if (!initialized && transports.length === 0) {
+      markTransportInitialized();
+      const initialBatch = TRANSPORT_SCHEDULES.filter(t => !deletedIds.has(t.id));
+      for (const t of initialBatch) {
+        setDoc(doc(db, COLLECTIONS.TRANSPORT, t.id), t).catch(err => {
+          console.warn('Initial transport seed doc write warning:', err);
+        });
+        transports.push(t);
+      }
+    } else {
+      markTransportInitialized();
+    }
+
+    cachedTransport = transports;
+    try {
+      localStorage.setItem(TRANSPORT_STORAGE_KEY, JSON.stringify(transports));
+    } catch (_) {}
+
+    return transports;
+  } catch (e) {
+    console.warn('Network error reading transport schedules, using local cache:', e);
+    // Return filtered local in-memory cache, never raw default data that resurrects deleted items!
+    return cachedTransport.filter(t => !deletedIds.has(t.id));
+  }
+}
+
+export function subscribeToTransport(callback: (transports: TransportSchedule[]) => void) {
+  const deletedIds = getDeletedTransportIds();
+  // 1. Immediately emit current cached data (0ms instant render)
+  const current = cachedTransport.filter(t => !deletedIds.has(t.id));
+  callback(current);
+
+  // 2. Add to active in-memory subscriber set
+  transportSubscribers.add(callback);
+
+  // 3. Listen to Firestore snapshot in real time
+  const unsub = onSnapshot(collection(db, COLLECTIONS.TRANSPORT), (snap) => {
+    const activeDeleted = getDeletedTransportIds();
+    const transports: TransportSchedule[] = [];
+    snap.forEach(d => {
+      if (!activeDeleted.has(d.id)) {
+        transports.push({ id: d.id, ...d.data() } as TransportSchedule);
+      }
+    });
+
+    const initialized = isTransportInitialized();
+    if (!initialized && transports.length === 0) {
+      markTransportInitialized();
+      for (const t of TRANSPORT_SCHEDULES) {
+        if (!activeDeleted.has(t.id)) {
+          setDoc(doc(db, COLLECTIONS.TRANSPORT, t.id), t).catch(() => {});
+          transports.push(t);
+        }
+      }
+    } else {
+      markTransportInitialized();
+    }
+
+    cachedTransport = transports;
+    try {
+      localStorage.setItem(TRANSPORT_STORAGE_KEY, JSON.stringify(transports));
+    } catch (_) {}
+
+    notifyTransportSubscribers(transports);
+  }, (err) => {
+    console.warn('Firestore transport subscription network fallback:', err);
+    callback(cachedTransport.filter(t => !getDeletedTransportIds().has(t.id)));
+  });
+
+  return () => {
+    transportSubscribers.delete(callback);
+    unsub();
+  };
+}
+
+export async function saveTransport(transData: Partial<TransportSchedule>): Promise<TransportSchedule> {
+  const id = transData.id || `tr-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+  const updated = {
+    ...transData,
+    id
+  } as TransportSchedule;
+
+  markTransportInitialized();
+
+  // 1. Remove from deleted IDs set if it was previously deleted
+  try {
+    const deleted = getDeletedTransportIds();
+    if (deleted.has(id)) {
+      deleted.delete(id);
+      localStorage.setItem(TRANSPORT_DELETED_IDS_KEY, JSON.stringify(Array.from(deleted)));
+    }
+  } catch (_) {}
+
+  // 2. Optimistically update in-memory cache and localStorage IMMEDIATELY (0ms)
+  const existingIdx = cachedTransport.findIndex(t => t.id === id);
+  if (existingIdx >= 0) {
+    cachedTransport = [
+      ...cachedTransport.slice(0, existingIdx),
+      updated,
+      ...cachedTransport.slice(existingIdx + 1)
+    ];
+  } else {
+    cachedTransport = [updated, ...cachedTransport];
+  }
+
+  try {
+    localStorage.setItem(TRANSPORT_STORAGE_KEY, JSON.stringify(cachedTransport));
+  } catch (_) {}
+
+  // 3. Immediately notify all UI components and dispatch global custom event
+  notifyTransportSubscribers(cachedTransport);
+
+  // 4. Save to remote Firestore
+  try {
+    await setDoc(doc(db, COLLECTIONS.TRANSPORT, id), updated);
+  } catch (err) {
+    console.warn('Could not sync transport to Firestore (local save active):', err);
+  }
+
+  addActivityLog({
+    type: 'transport_updated',
+    title: 'যাতায়াত শিডিউল আপডেট',
+    description: `${updated.name} (${updated.type}) সফলভাবে সংরক্ষণ করা হয়েছে।`,
+    actor: 'অ্যাডমিন'
+  });
+
+  return updated;
+}
+
+export async function deleteTransport(id: string): Promise<void> {
+  markTransportInitialized();
+
+  // 1. Permanently register deleted ID so it NEVER resurrects
+  recordDeletedTransportId(id);
+
+  // 2. Optimistically remove from in-memory cache and localStorage IMMEDIATELY (0ms)
+  cachedTransport = cachedTransport.filter(t => t.id !== id);
+  try {
+    localStorage.setItem(TRANSPORT_STORAGE_KEY, JSON.stringify(cachedTransport));
+  } catch (_) {}
+
+  // 3. Immediately notify all UI components and dispatch global custom event
+  notifyTransportSubscribers(cachedTransport);
+
+  // 4. Delete from remote Firestore
+  try {
+    await deleteDoc(doc(db, COLLECTIONS.TRANSPORT, id));
+  } catch (e) {
+    console.warn('Could not delete from Firestore (local removal complete):', e);
+  }
+
+  addActivityLog({
+    type: 'transport_updated',
+    title: 'যাতায়াত শিডিউল ডিলিট',
+    description: `শিডিউল আইডি: ${id} সফলভাবে মুছে ফেলা হয়েছে।`,
+    actor: 'অ্যাডমিন'
+  });
+}
+
+export async function deleteAllTransportsBatch(): Promise<void> {
+  markTransportInitialized();
+  const allIds = cachedTransport.map(t => t.id);
+  recordDeletedTransportIds(allIds);
+
+  cachedTransport = [];
+  try {
+    localStorage.setItem(TRANSPORT_STORAGE_KEY, JSON.stringify([]));
+  } catch (_) {}
+
+  notifyTransportSubscribers([]);
+
+  // Delete from remote Firestore
+  for (const id of allIds) {
+    deleteDoc(doc(db, COLLECTIONS.TRANSPORT, id)).catch(() => {});
+  }
+
+  addActivityLog({
+    type: 'transport_updated',
+    title: 'সকল যাতায়াত শিডিউল ডিলিট',
+    description: 'যাতায়াত ও সময়সূচীর সকল রেকর্ড এডমিন প্যানেল থেকে মুছে ফেলা হয়েছে।',
+    actor: 'অ্যাডমিন'
+  });
+}
+
+export async function restoreDefaultTransports(): Promise<TransportSchedule[]> {
+  try {
+    localStorage.removeItem(TRANSPORT_DELETED_IDS_KEY);
+    localStorage.removeItem(TRANSPORT_STORAGE_KEY);
+  } catch (_) {}
+  markTransportInitialized();
+
+  cachedTransport = [...TRANSPORT_SCHEDULES];
+  try {
+    localStorage.setItem(TRANSPORT_STORAGE_KEY, JSON.stringify(cachedTransport));
+  } catch (_) {}
+
+  notifyTransportSubscribers(cachedTransport);
+
+  for (const t of TRANSPORT_SCHEDULES) {
+    setDoc(doc(db, COLLECTIONS.TRANSPORT, t.id), t).catch(() => {});
+  }
+
+  addActivityLog({
+    type: 'transport_updated',
+    title: 'ডিফল্ট যাতায়াত শিডিউল রিস্টোর',
+    description: 'কুষ্টিয়া যাতায়াত ও টিকেটিং ডিফল্ট শিডিউলসমূহ সফলভাবে রিস্টোর করা হয়েছে।',
+    actor: 'অ্যাডমিন'
+  });
+
+  return cachedTransport;
+}
+
+// -------------------------------------------------------------
+// 6. CSV & SPREADSHEET EXPORT ENGINE
 // -------------------------------------------------------------
 export function downloadCSV(filename: string, rows: (string | number)[][]): void {
-  // Prepend UTF-8 BOM so Excel opens Bengali characters properly
   const BOM = '\uFEFF';
   const csvContent = rows
     .map(row => 
@@ -599,7 +832,7 @@ export function exportPostsCSV(posts: PostItem[]): void {
     p.status || 'approved',
     p.isVerified ? 'হ্যাঁ' : 'না'
   ]);
-  downloadCSV('rajshahi_connect_posts', [headers, ...rows]);
+  downloadCSV('kushtia_connect_posts', [headers, ...rows]);
 }
 
 export function exportBloodDonorsCSV(donors: BloodDonor[]): void {
@@ -614,7 +847,7 @@ export function exportBloodDonorsCSV(donors: BloodDonor[]): void {
     d.lastDonationDate || 'জানা নেই',
     d.isAvailable ? 'প্রস্তুত' : 'অনুপলব্ধ'
   ]);
-  downloadCSV('rajshahi_blood_donors', [headers, ...rows]);
+  downloadCSV('kushtia_blood_donors', [headers, ...rows]);
 }
 
 export function exportDoctorsCSV(doctors: Doctor[]): void {
@@ -630,7 +863,7 @@ export function exportDoctorsCSV(doctors: Doctor[]): void {
     d.serialNumber,
     d.fee
   ]);
-  downloadCSV('rajshahi_doctors_directory', [headers, ...rows]);
+  downloadCSV('kushtia_doctors_directory', [headers, ...rows]);
 }
 
 export function exportGrievanceReportsCSV(reports: GrievanceReport[]): void {
@@ -647,7 +880,7 @@ export function exportGrievanceReportsCSV(reports: GrievanceReport[]): void {
     r.adminNotes || '',
     new Date(r.createdAt).toLocaleDateString('bn-BD')
   ]);
-  downloadCSV('rajshahi_citizen_reports', [headers, ...rows]);
+  downloadCSV('kushtia_citizen_reports', [headers, ...rows]);
 }
 
 export function exportUsersCSV(users: UserProfile[]): void {
@@ -662,78 +895,38 @@ export function exportUsersCSV(users: UserProfile[]): void {
     u.isVerified ? 'হ্যাঁ' : 'না',
     u.joinedAt ? new Date(u.joinedAt).toLocaleDateString('bn-BD') : 'সম্প্রতি'
   ]);
-  downloadCSV('rajshahi_registered_citizens', [headers, ...rows]);
+  downloadCSV('kushtia_registered_citizens', [headers, ...rows]);
 }
 
-// -------------------------------------------------------------
-// TRANSPORT SCHEDULE MANAGEMENT SERVICE
-// -------------------------------------------------------------
-const MANAGED_TRANSPORT_KEY = 'rajshahi_managed_transport';
-
-export function getManagedTransport(): TransportSchedule[] {
+export function playSirenTone() {
+  if (typeof window === 'undefined') return;
   try {
-    const data = localStorage.getItem(MANAGED_TRANSPORT_KEY);
-    if (data) {
-      return JSON.parse(data);
-    }
-  } catch (e) {}
-  return TRANSPORT_SCHEDULES;
-}
-
-export function saveTransport(transData: Partial<TransportSchedule>): TransportSchedule {
-  const list = getManagedTransport();
-  let updated: TransportSchedule;
-  if (transData.id) {
-    updated = {
-      ...list.find(t => t.id === transData.id)!,
-      ...transData,
-    } as TransportSchedule;
-    const newList = list.map(t => t.id === transData.id ? updated : t);
-    localStorage.setItem(MANAGED_TRANSPORT_KEY, JSON.stringify(newList));
-    addActivityLog({
-      type: 'user_registered',
-      title: 'যাতায়াত শিডিউল আপডেট',
-      description: `${updated.name} (${updated.type}) আপডেট করা হয়েছে।`,
-      actor: 'অ্যাডমিন'
-    });
-  } else {
-    updated = {
-      id: `tr-${Date.now()}`,
-      type: transData.type || 'বাস',
-      name: transData.name || 'নতুন পরিবহন',
-      code: transData.code || '',
-      route: transData.route || 'কুষ্টিয়া ⇄ ঢাকা',
-      departureTime: transData.departureTime || 'সকাল ৮:০০',
-      arrivalTime: transData.arrivalTime || 'সন্ধ্যা ৬:০০',
-      offDay: transData.offDay || 'নেই',
-      fareList: transData.fareList || [{ class: 'সাধারণ', fare: '৫০০ ৳' }],
-      bookingPhone: transData.bookingPhone || '01700000000'
-    };
-    const newList = [updated, ...list];
-    localStorage.setItem(MANAGED_TRANSPORT_KEY, JSON.stringify(newList));
-    addActivityLog({
-      type: 'user_registered',
-      title: 'নতুন যাতায়াত শিডিউল',
-      description: `${updated.name} (${updated.type}) যোগ করা হয়েছে।`,
-      actor: 'অ্যাডমিন'
-    });
+    const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
+    if (!AudioContextClass) return;
+    
+    const audioCtx = new AudioContextClass();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = 'sine';
+    const now = audioCtx.currentTime;
+    
+    // Create a siren effect (whoop whoop)
+    osc.frequency.setValueAtTime(440, now);
+    osc.frequency.exponentialRampToValueAtTime(880, now + 0.5);
+    osc.frequency.exponentialRampToValueAtTime(440, now + 1.0);
+    osc.frequency.exponentialRampToValueAtTime(880, now + 1.5);
+    osc.frequency.exponentialRampToValueAtTime(440, now + 2.0);
+    
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 2.4);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    osc.start();
+    osc.stop(now + 2.5);
+  } catch (e) {
+    console.warn('Audio siren failed:', e);
   }
-  window.dispatchEvent(new CustomEvent('rajshahi-transport-updated'));
-  return updated;
-}
-
-export function deleteTransport(id: string): void {
-  const list = getManagedTransport();
-  const item = list.find(t => t.id === id);
-  const newList = list.filter(t => t.id !== id);
-  localStorage.setItem(MANAGED_TRANSPORT_KEY, JSON.stringify(newList));
-  if (item) {
-    addActivityLog({
-      type: 'user_registered',
-      title: 'যাতায়াত শিডিউল ডিলিট',
-      description: `${item.name} ডিলিট করা হয়েছে।`,
-      actor: 'অ্যাডমিন'
-    });
-  }
-  window.dispatchEvent(new CustomEvent('rajshahi-transport-updated'));
 }

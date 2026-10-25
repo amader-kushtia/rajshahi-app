@@ -486,7 +486,7 @@ export function subscribeToPosts(
         });
       });
 
-      // Merge remote posts with local master posts, preserving highest likes and views
+      // Merge remote posts with local master posts, preserving local edits and highest likes and views
       const currentMaster = getMasterPosts();
       const localMap = new Map<string, PostItem>();
       currentMaster.forEach(p => localMap.set(p.id, p));
@@ -495,11 +495,13 @@ export function subscribeToPosts(
       remotePosts.forEach(p => {
         if (deletedIds.has(p.id)) return;
         const local = localMap.get(p.id);
-        const mergedPost: PostItem = {
+        // Local edits take precedence over older remote data so edits are never wiped
+        const mergedPost: PostItem = local ? {
           ...p,
-          likes: Math.max(p.likes ?? 0, local?.likes ?? 0),
-          views: Math.max(p.views ?? 0, local?.views ?? 0),
-        };
+          ...local,
+          likes: Math.max(p.likes ?? 0, local.likes ?? 0),
+          views: Math.max(p.views ?? 0, local.views ?? 0),
+        } : p;
         map.set(p.id, mergedPost);
       });
 
@@ -553,7 +555,7 @@ export function subscribeToPosts(
   };
 }
 
-const POST_COOLDOWN_MS = 30000; // 30 seconds cooldown between post submissions
+const POST_COOLDOWN_MS = 10000; // 10 seconds cooldown between post submissions
 const LAST_POST_TIME_KEY = 'rajshahi_last_post_time';
 const MY_SUBMITTED_POST_IDS_KEY = 'rajshahi_my_submitted_post_ids';
 
@@ -589,11 +591,12 @@ export function isPostPublic(post: PostItem): boolean {
 // Create new post in Firestore and Master Repository
 export async function createNewPost(postData: Omit<PostItem, 'id' | 'createdAt'>): Promise<string> {
   const authorUid = postData.authorId || (postData as any).authorUid || (postData as any).userId;
+  // Demo users and guests are allowed to post, but they will be subject to standard moderation (pending status)
+  // unless they are explicitly authenticated via Firebase and have appropriate roles.
+  // The 'citizen-' prefix is used for demo users in the preview environment.
+  const isDemoUser = authorUid && typeof authorUid === 'string' && (authorUid.startsWith('citizen-') || authorUid.startsWith('demo-') || authorUid.startsWith('guest-'));
 
-  // Prevent demo users from creating posts
-  if (authorUid && typeof authorUid === 'string' && (authorUid.startsWith('citizen-') || authorUid.startsWith('demo-') || authorUid.startsWith('guest-'))) {
-    throw new Error('পোস্ট করতে অ্যাকাউন্ট তৈরি করুন');
-  }
+
 
   const now = Date.now();
 
@@ -649,7 +652,7 @@ export async function createNewPost(postData: Omit<PostItem, 'id' | 'createdAt'>
   const current = getMasterPosts();
   saveMasterPosts([newPost, ...current]);
 
-  // 2. Asynchronously sync to Cloud Firestore
+  // 2. Sync to Cloud Firestore (Blocking wait to ensure durability)
   try {
     const docRef = doc(db, 'posts', newId);
     await setDoc(docRef, {
@@ -657,8 +660,12 @@ export async function createNewPost(postData: Omit<PostItem, 'id' | 'createdAt'>
       createdAt: serverTimestamp(),
       timestampMillis: newPost.createdAt
     });
-  } catch (err) {
-    console.warn('Could not write to remote Firestore, local copy preserved:', err);
+  } catch (err: any) {
+    console.error('Firestore post write failed:', err);
+    // Rollback local cache if Firestore failed
+    const rolledBack = getMasterPosts().filter(p => p.id !== newId);
+    saveMasterPosts(rolledBack, false);
+    throw new Error(`সার্ভারে পোস্টটি সংরক্ষণ করা যায়নি: ${err.message || 'Firestore Error'}`);
   }
 
   return newId;
@@ -736,19 +743,60 @@ export async function fetchPostsPaginated(
       : null;
     const hasMore = querySnapshot.docs.length === pageSize;
 
+    // Merge with local master posts (including demo posts) on the first page
+    let finalPosts = remotePosts;
+    if (!lastDocCursor) {
+      const local = getMasterPosts();
+      const localFiltered = (!categoryFilter || categoryFilter === 'home' || categoryFilter === 'all')
+        ? local
+        : local.filter(p => p.category === (categoryFilter as any));
+
+      const map = new Map<string, PostItem>();
+      // Remote posts first
+      remotePosts.forEach(p => map.set(p.id, p));
+      // Local posts merge on top so user edits are NEVER lost
+      localFiltered.forEach(p => {
+        const remote = map.get(p.id);
+        if (remote) {
+          map.set(p.id, {
+            ...remote,
+            ...p,
+            likes: Math.max(remote.likes ?? 0, p.likes ?? 0),
+            views: Math.max(remote.views ?? 0, p.views ?? 0)
+          });
+        } else {
+          map.set(p.id, p);
+        }
+      });
+
+      finalPosts = Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    }
+
     // Cache to local master so offline / fast reload works
     if (remotePosts.length > 0) {
       const current = getMasterPosts();
+      const localMap = new Map<string, PostItem>();
+      current.forEach(p => localMap.set(p.id, p));
+
       const map = new Map<string, PostItem>();
-      remotePosts.forEach(p => map.set(p.id, p));
+      remotePosts.forEach(p => {
+        if (deletedIds.has(p.id)) return;
+        const local = localMap.get(p.id);
+        map.set(p.id, local ? {
+          ...p,
+          ...local,
+          likes: Math.max(p.likes ?? 0, local.likes ?? 0),
+          views: Math.max(p.views ?? 0, local.views ?? 0)
+        } : p);
+      });
       current.forEach(p => {
-        if (!map.has(p.id)) map.set(p.id, p);
+        if (!deletedIds.has(p.id) && !map.has(p.id)) map.set(p.id, p);
       });
       saveMasterPosts(Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)), false);
     }
 
     return {
-      posts: remotePosts,
+      posts: finalPosts,
       lastDoc: lastVisible,
       hasMore
     };
@@ -929,17 +977,24 @@ export async function deletePostsBatch(postIds: string[]): Promise<void> {
   }
 }
 
-// Update post in Master Repository and Firestore
+// Update post in Master Repository, IndexedDB, and Firestore
 export async function updatePost(postId: string, data: Partial<PostItem>): Promise<void> {
   // 1. Update in Master Repository & notify immediately
   const current = getMasterPosts();
+  let updatedPost: PostItem | null = null;
   const updated = current.map(p => {
     if (p.id === postId) {
-      return { ...p, ...data };
+      updatedPost = { ...p, ...data, updatedAt: Date.now() };
+      return updatedPost;
     }
     return p;
   });
   saveMasterPosts(updated);
+
+  // In IndexedDB, also update immediately
+  if (updatedPost) {
+    idbPutPost(updatedPost).catch(() => {});
+  }
 
   // 2. Asynchronously update in remote Firestore
   try {

@@ -46,18 +46,30 @@ const ADMIN_STORAGE_KEY = 'kushtia_admin_auth';
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [customClaims, setCustomClaims] = useState<Record<string, any> | null>(null);
+  const updateUserProfile = (profile: UserProfile) => {
+    setUser(profile);
+    // Persist profile to localStorage as a secondary cache for refresh stability
+    try {
+      localStorage.setItem('kushtia_user_profile', JSON.stringify(profile));
+    } catch (e) {
+      console.warn('Error persisting user profile to localStorage', e);
+    }
+  };
+
   const [user, setUser] = useState<UserProfile | null>(() => {
     try {
+      // 1. Check Demo User in Session
       const demo = sessionStorage.getItem('kushtia_demo_user');
-      if (demo) {
-        return JSON.parse(demo);
-      }
+      if (demo) return JSON.parse(demo);
+
+      // 2. Check Persisted Profile in LocalStorage (Survives Refresh)
+      const persisted = localStorage.getItem('kushtia_user_profile');
+      if (persisted) return JSON.parse(persisted);
     } catch (e) {
-      console.warn('Error reading stored demo user', e);
+      console.warn('Error reading stored user', e);
     }
     return null;
   });
-  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
@@ -105,10 +117,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             role: isAdminAccount ? 'admin' : (extraData.role || 'citizen'),
             status: extraData.status || 'active',
             banExpiresAt: extraData.banExpiresAt,
-            banReason: extraData.banReason
+            banReason: extraData.banReason,
+            bloodGroup: extraData.bloodGroup,
+            profession: extraData.profession,
+            upazila: extraData.upazila,
+            dob: extraData.dob,
           };
 
+          // Auto-sync admin role to Firestore if identified as admin via hardcoded list but doc is missing role
+          if (isAdminAccount && extraData.role !== 'admin' && fbUser.uid) {
+            setDoc(userRef, { role: 'admin' }, { merge: true }).catch(err => {
+              console.warn('Could not sync admin role to document:', err);
+            });
+          }
+
           setUser(profile);
+          // Sync to localStorage
+          try {
+            localStorage.setItem('kushtia_user_profile', JSON.stringify(profile));
+          } catch (e) {}
           setLoading(false);
         }, (error) => {
           console.error("Error listening to user status:", error);
@@ -119,9 +146,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setCustomClaims(null);
         const stored = sessionStorage.getItem('kushtia_demo_user');
+        const persisted = localStorage.getItem('kushtia_user_profile');
         if (stored) {
           try {
             setUser(JSON.parse(stored));
+          } catch {
+            setUser(null);
+          }
+        } else if (persisted) {
+          try {
+            setUser(JSON.parse(persisted));
           } catch {
             setUser(null);
           }
@@ -134,6 +168,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => unsubscribe();
   }, []);
+
+  const [loading, setLoading] = useState<boolean>(true);
 
   const loginWithCredentials = async (emailInput: string, passInput: string) => {
     let cleanInput = emailInput.trim();
@@ -193,6 +229,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logOut = async () => {
     try {
       localStorage.removeItem(ADMIN_STORAGE_KEY);
+      localStorage.removeItem('kushtia_user_profile');
       sessionStorage.removeItem(ADMIN_STORAGE_KEY);
       sessionStorage.removeItem('kushtia_demo_user');
       await signOut(auth);
@@ -204,9 +241,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     window.dispatchEvent(new CustomEvent('require-auth'));
   };
 
-  const updateUserProfile = (profile: UserProfile) => {
-    setUser(profile);
-  };
 
   const isAdmin = isUserAdmin(user, customClaims, firebaseUser?.email);
 

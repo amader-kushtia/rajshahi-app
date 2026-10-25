@@ -1,9 +1,12 @@
 {
-  "projectId": "rajshahi-63d2d",
-  "appId": "1:909187960006:web:d7812c74ad971d68a99bc7",
-  "apiKey": "AIzaSyA_DFeYVqZD7wjEGvS1NwrQagvO1KtB4e8",
-  "authDomain": "rajshahi-63d2d.firebaseapp.com",
-  "storageBucket": "rajshahi-63d2d.firebasestorage.app",
-  "messagingSenderId": "909187960006",
-  "measurementId": "G-R475WD4FRJ"
+  "projectId": "saidpur-connect",
+  "appId": "1:585209838445:web:6e8aa55fbbdd6d04637864",
+  "apiKey": "AIzaSyAt_TAKs1ZglopcM6faxAScoIR2QPKI-4Y",
+  "authDomain": "saidpur-connect.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-saidpurconnect-b953eb0c-1094-476f-b88a-1ea3c6b3fbf5",
+  "storageBucket": "saidpur-connect.firebasestorage.app",
+  "messagingSenderId": "585209838445",
+  "measurementId": "",
+  "oAuthClientId": "585209838445-nnd51knh9cehseq3rfrm2s4t7qdglmcq.apps.googleusercontent.com",
+  "recaptchaSiteKey": ""
 }

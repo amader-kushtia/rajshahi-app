@@ -39,7 +39,9 @@ export const VolunteerManagementTab: React.FC = () => {
 
   // Settings state
   const [popupActive, setPopupActive] = useState(themeConfig.volunteerPopupActive);
-  const [popupMessage, setPopupMessage] = useState(themeConfig.volunteerPopupMessage);
+  const [popupMessage, setPopupMessage] = useState(() => 
+    (themeConfig.volunteerPopupMessage || '').replace(/সৈয়দপুর|সৈয়দপুর|Syedpur|Saidpur/gi, 'কুষ্টিয়া')
+  );
   const [contactNumber, setContactNumber] = useState(themeConfig.volunteerContactNumber);
 
   const handleSaveSettings = () => {

@@ -23,8 +23,8 @@ import { ManagedSponsoredCampaign } from '../../services/sponsoredService';
 import { AdminTabType } from './AdminSidebarDrawer';
 import { 
   getFlashAlerts, 
-  getGrievanceReports, 
-  getBloodEmergencyAlerts 
+  getGrievances, 
+  getBloodAlerts 
 } from '../../services/adminFeaturesService';
 import { getManagedUsers } from '../../services/adminService';
 import {
@@ -100,9 +100,9 @@ export const OverviewAnalyticsTab: React.FC<OverviewAnalyticsTabProps> = ({
 
   const flashAlerts = getFlashAlerts();
   const activeFlashAlert = flashAlerts.find(a => a.isActive);
-  const grievances = getGrievanceReports();
+  const grievances = getGrievances();
   const pendingGrievances = grievances.filter(g => g.status === 'pending');
-  const bloodAlerts = getBloodEmergencyAlerts();
+  const bloodAlerts = getBloodAlerts();
   const activeBloodAlerts = bloodAlerts.filter(b => b.isActive);
 
   // Category Metrics State & Aggregations

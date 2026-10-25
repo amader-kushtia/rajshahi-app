@@ -23,10 +23,12 @@ import {
   saveBloodDonor, 
   toggleBloodDonorAvailability, 
   deleteBloodDonor, 
+  subscribeToBloodDonors,
   getBloodEmergencyAlerts, 
   createBloodEmergencyAlert, 
   toggleBloodAlertStatus, 
-  deleteBloodEmergencyAlert 
+  deleteBloodEmergencyAlert,
+  subscribeToBloodAlerts
 } from '../../services/adminFeaturesService';
 import { publishEmergencyBroadcast } from '../../utils/pushNotification';
 
@@ -58,19 +60,16 @@ export const BloodManagementTab: React.FC = () => {
   const [donorTotal, setDonorTotal] = useState(1);
   const [donorLastDate, setDonorLastDate] = useState('৩ মাস পূর্বে');
 
-  const refreshData = () => {
-    setDonors(getManagedBloodDonors());
-    setBloodAlerts(getBloodEmergencyAlerts());
-  };
-
   useEffect(() => {
-    refreshData();
-    const handleUpdate = () => refreshData();
-    window.addEventListener('kushtia-blood-updated', handleUpdate);
-    window.addEventListener('kushtia-blood-alert-updated', handleUpdate);
+    const unsubDonors = subscribeToBloodDonors((data) => {
+      setDonors(data);
+    });
+    const unsubAlerts = subscribeToBloodAlerts((data) => {
+      setBloodAlerts(data);
+    });
     return () => {
-      window.removeEventListener('kushtia-blood-updated', handleUpdate);
-      window.removeEventListener('kushtia-blood-alert-updated', handleUpdate);
+      unsubDonors();
+      unsubAlerts();
     };
   }, []);
 
@@ -532,7 +531,7 @@ export const BloodManagementTab: React.FC = () => {
                   type="text"
                   value={donorLocation}
                   onChange={(e) => setDonorLocation(e.target.value)}
-                  placeholder="যেমন: কুন্দল, কুষ্টিয়া"
+                  placeholder="যেমন: মজমপুর, কুষ্টিয়া"
                   className="w-full px-3 py-2 rounded-xl border border-pink-300 text-xs font-medium focus:ring-2 focus:ring-rose-500 outline-hidden"
                 />
               </div>

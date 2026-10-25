@@ -173,11 +173,22 @@ export const PostManagementTab: React.FC<PostManagementTabProps> = ({
     setRejectionReason('');
   };
 
-  const handleConfirmDelete = () => {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleConfirmDelete = async () => {
+    console.log("Confirm delete for:", postToDelete);
     if (postToDelete) {
-      onDeletePost(postToDelete.id);
-      showToast(`"${postToDelete.title}" পোস্টটি সফলভাবে মূল অ্যাপ থেকে মুছে ফেলা হয়েছে।`);
-      setPostToDelete(null);
+      setIsDeleting(true);
+      try {
+        await onDeletePost(postToDelete.id);
+        showToast(`"${postToDelete.title}" পোস্টটি সফলভাবে মূল অ্যাপ থেকে মুছে ফেলা হয়েছে।`);
+      } catch (err) {
+        console.error('Error deleting post:', err);
+        alert('পোস্ট ডিলিট করতে সমস্যা হয়েছে।');
+      } finally {
+        setIsDeleting(false);
+        setPostToDelete(null);
+      }
     }
   };
 
@@ -1183,10 +1194,11 @@ export const PostManagementTab: React.FC<PostManagementTabProps> = ({
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 active:scale-98 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-1.5"
+                disabled={isDeleting}
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 active:scale-98 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-1.5"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>হ্যাঁ, মুছে ফেলুন</span>
+                <span>{isDeleting ? 'মুছে ফেলা হচ্ছে...' : 'হ্যাঁ, মুছে ফেলুন'}</span>
               </button>
             </div>
           </div>

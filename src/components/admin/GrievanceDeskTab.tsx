@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { GrievanceReport } from '../../types';
 import { 
-  getGrievanceReports, 
+  getGrievances, 
   updateGrievanceStatus, 
   deleteGrievanceReport 
 } from '../../services/adminFeaturesService';
@@ -34,7 +34,7 @@ export const GrievanceDeskTab: React.FC = () => {
   const [adminNoteInput, setAdminNoteInput] = useState('');
 
   const loadReports = () => {
-    setReports(getGrievanceReports());
+    setReports(getGrievances());
   };
 
   useEffect(() => {

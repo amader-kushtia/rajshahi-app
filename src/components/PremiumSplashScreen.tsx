@@ -242,7 +242,7 @@ export const PremiumSplashScreen: React.FC<PremiumSplashScreenProps> = ({ onComp
               <div className="relative w-20 h-20 sm:w-22 sm:h-22 rounded-2xl bg-gradient-to-b from-emerald-600 to-emerald-800 p-[1.5px] shadow-xl shadow-emerald-950/60">
                 <div className="w-full h-full rounded-[14px] bg-[#081822] flex flex-col items-center justify-center">
                   
-                  {/* Syedpur Connect Geometric Node Symbol */}
+                  {/* Kushtia Connect Geometric Node Symbol */}
                   <svg 
                     className="w-10 h-10 text-emerald-400" 
                     viewBox="0 0 40 40" 

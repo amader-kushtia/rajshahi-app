@@ -163,7 +163,7 @@ ${userCustomDetails.trim() ? `• বিজ্ঞাপনের বিবরণ
               rows={2}
               value={userCustomDetails}
               onChange={(e) => setUserCustomDetails(e.target.value)}
-              placeholder={`উদা: কুন্দল মোড়ে ২ রুমের বাসা ভাড়া / রিয়েলমি ফোন সেল / অভিজ্ঞ ইলেকট্রিশিয়ান সার্ভিস...`}
+              placeholder={`উদা: মজমপুর মোড়ে ২ রুমের বাসা ভাড়া / রিয়েলমি ফোন সেল / অভিজ্ঞ ইলেকট্রিশিয়ান সার্ভিস...`}
               className="w-full px-3 py-2 rounded-xl bg-emerald-950/70 border border-emerald-600/60 text-white placeholder-emerald-300/50 text-xs focus:outline-none focus:ring-1 focus:ring-amber-300 resize-none"
             />
           </div>

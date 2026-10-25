@@ -54,8 +54,13 @@ export const AppWelcomePopupModal: React.FC<AppWelcomePopupModalProps> = ({
     }
   };
 
-  const title = appConfig.welcomePopupTitle || 'আমার কুষ্টিয়াে স্বাগতম!';
-  const message = appConfig.welcomePopupMessage || 'কুষ্টিয়া শহরের সব প্রয়োজনীয় নাগরিক সেবা, জরুরি যোগাযোগ, বাসা ভাড়া ও কেনাবেচার তথ্য এখন আপনার হাতের মুঠোয়।';
+  const rawTitle = appConfig.welcomePopupTitle || 'আমার কুষ্টিয়ায় আপনাকে স্বাগতম!';
+  const title = (rawTitle.includes('কানেক্টে') || rawTitle.includes('কুষ্টিয়া কানেক্ট'))
+    ? 'আমার কুষ্টিয়ায় আপনাকে স্বাগতম!'
+    : rawTitle.replace(/সৈয়দপুর|সৈয়দপুর|Syedpur|Saidpur/gi, 'কুষ্টিয়া').replace(/আমার কুষ্টিয়াে/g, 'আমার কুষ্টিয়ায়');
+
+  const rawMessage = appConfig.welcomePopupMessage || 'কুষ্টিয়া শহরের সব প্রয়োজনীয় জরুরি সেবা, ডাক্তার ডিরেক্টরি, রক্তের ডাক, ট্রেনের সময়সূচি এবং স্থানীয় কেনাবেচা ও বাসা ভাড়ার তথ্য এখন আপনার হাতের মুঠোয়।';
+  const message = rawMessage.replace(/সৈয়দপুর|সৈয়দপুর|Syedpur|Saidpur/gi, 'কুষ্টিয়া');
   const buttonText = appConfig.welcomePopupButtonText || 'শুরু করুন';
   const actionText = appConfig.welcomePopupActionText;
   const hasActionUrl = Boolean(appConfig.welcomePopupActionUrl && actionText);

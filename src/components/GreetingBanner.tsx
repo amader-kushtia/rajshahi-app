@@ -13,7 +13,7 @@ export const GreetingBanner: React.FC<GreetingBannerProps> = ({ onSearchClick })
 
   const userName = user?.displayName ? (user.displayName.split(' ')[0]) : 'সম্মানিত নাগরিক';
   const cityName = themeConfig?.cityName || 'কুষ্টিয়া জেলা';
-  const appName = (themeConfig?.appName && themeConfig.appName !== 'আমার কুষ্টিয়া') ? themeConfig.appName : 'আমার কুষ্টিয়া';
+  const appName = 'আমার কুষ্টিয়া';
 
   return (
     <div className="pt-2 pb-1">

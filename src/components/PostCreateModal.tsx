@@ -376,11 +376,11 @@ export const PostCreateModal: React.FC<PostCreateModalProps> = ({
               onChange={(e) => setTitle(e.target.value)}
               placeholder={
                 category === 'house-rent'
-                  ? 'যেমন: কুন্দল মোড়ে ৩ রুমের মনোরম ফ্যামিলি বাসা ভাড়া'
+                  ? 'যেমন: মজমপুর গেটে ৩ রুমের মনোরম ফ্যামিলি বাসা ভাড়া'
                   : category === 'buy-sell'
                   ? 'যেমন: ব্যবহৃত পালসার ১৫০সিসি ও রেডমি স্মার্টফোন'
                   : category === 'crime-reporter'
-                  ? 'যেমন: রেলওয়ে ইয়ার্ডে রাতের বেলায় মাদক সেবন ও বিক্রয়'
+                  ? 'যেমন: কুষ্টিয়া কোর্ট স্টেশন সংলগ্ন এলাকায় রাতের বেলায় মাদক সেবন ও বিক্রয়'
                   : 'পোস্টের শিরোনাম লিখুন'
               }
               className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200/80 text-xs focus:outline-none focus:border-pink-600 focus:ring-1 focus:ring-emerald-600 font-medium"

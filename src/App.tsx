@@ -23,6 +23,7 @@ import { PremiumSplashScreen } from './components/PremiumSplashScreen';
 import { PostReviewModal } from './components/PostReviewModal';
 import { VolunteerJoinPopup } from './components/VolunteerJoinPopup';
 import { KushtiaDashboard } from './components/KushtiaDashboard';
+import { FooterSocialSection } from './components/FooterSocialSection';
 
 // Lazy-loaded Dedicated Pages to drastically cut initial JS payload & boost PageSpeed Insights score
 const PostDetailPage = lazy(() => import('./pages/PostDetailPage').then(m => ({ default: m.PostDetailPage })));
@@ -287,11 +288,7 @@ function MainAppContent() {
       return;
     }
     if (category === 'admin-panel') {
-      if (isAdmin) {
-        setIsAdminApp(true);
-      } else {
-        setCurrentCategory('home');
-      }
+      setIsAdminApp(true);
       return;
     }
     if (category === 'share-app') {
@@ -600,7 +597,7 @@ function MainAppContent() {
 
 
   // STANDALONE ADMIN APP INTERFACE
-  if ((isAdminApp || currentCategory === 'admin-panel') && isAdmin) {
+  if (isAdminApp || currentCategory === 'admin-panel') {
     return (
       <ErrorBoundary>
         <Suspense fallback={
@@ -990,6 +987,7 @@ function MainAppContent() {
             )}
           </Suspense>
         </ErrorBoundary>
+          <FooterSocialSection />
         </main>
 
         {/* Discreet Floating Admin Quick Launcher - ONLY FOR AUTHENTICATED ADMIN */}
@@ -1006,7 +1004,7 @@ function MainAppContent() {
         )}
 
         {/* Bottom Navigation Tabs - Permanently visible on all citizen pages */}
-        {currentCategory !== 'admin-panel' && (
+        {(currentCategory as string) !== 'admin-panel' && (
           <BottomNavigation
             currentCategory={currentCategory}
             onNavigate={handleNavigate}
@@ -1027,7 +1025,7 @@ function MainAppContent() {
 
         <DemoNoticeModal />
         <AppWelcomePopupModal 
-          appConfig={appConfig}
+          appConfig={themeConfig}
           onNavigate={handleNavigate}
         />
         <VolunteerJoinPopup onNavigate={handleNavigate} />

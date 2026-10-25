@@ -26,9 +26,9 @@ export default defineConfig(({ mode }) => {
         },
         manifest: {
           id: '/',
-          name: 'কুষ্টিয়া কানেক্ট',
-          short_name: 'রাঃ কানেক্ট',
-          description: 'কুষ্টিয়া শহরের আধুনিক স্মার্ট নাগরিক সেবা',
+          name: 'আমার কুষ্টিয়া',
+          short_name: 'আমার কুষ্টিয়া',
+          description: 'আমার কুষ্টিয়া - আধুনিক স্মার্ট নাগরিক সেবা',
           theme_color: '#059669',
           background_color: '#ffffff',
           display: 'standalone',
